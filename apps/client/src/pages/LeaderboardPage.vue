@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTelegram } from '@/composables/useTelegram';
+import { ScreenLayout, BaseTabs, LeaderboardRow, PodiumPlace } from '@umbrella-software-corp/ui-kit';
 
 const router = useRouter();
 const { user } = useTelegram();
 const tg = window.Telegram?.WebApp;
-const activeTab = ref<'weekly' | 'allTime'>('weekly');
+const activeTab = ref('weekly');
+
+const tabs = [
+  { id: 'weekly', label: 'Weekly' },
+  { id: 'allTime', label: 'All Time' },
+];
 
 interface LeaderEntry {
   rank: number;
@@ -16,7 +22,6 @@ interface LeaderEntry {
   isMe: boolean;
 }
 
-// Mock data
 const weeklyBoard = ref<LeaderEntry[]>([
   { rank: 1, name: 'ProGamer99', score: 52400, level: 45, isMe: false },
   { rank: 2, name: 'BlastKing', score: 48200, level: 42, isMe: false },
@@ -50,14 +55,13 @@ const allTimeBoard = ref<LeaderEntry[]>([
   { rank: 78, name: user.value?.first_name ?? 'You', score: 1200, level: 1, isMe: true },
 ]);
 
-const currentBoard = ref(weeklyBoard.value);
-const playerRank = ref(42);
+const currentBoard = computed(() =>
+  activeTab.value === 'weekly' ? weeklyBoard.value : allTimeBoard.value,
+);
 
-function switchTab(tab: 'weekly' | 'allTime') {
-  activeTab.value = tab;
-  currentBoard.value = tab === 'weekly' ? weeklyBoard.value : allTimeBoard.value;
-  playerRank.value = tab === 'weekly' ? 42 : 78;
-}
+const playerRank = computed(() =>
+  activeTab.value === 'weekly' ? 42 : 78,
+);
 
 function goBack() {
   router.push({ name: 'home' });
@@ -88,22 +92,9 @@ function getMedalEmoji(rank: number): string {
       <h2>Leaderboard</h2>
     </header>
 
-    <!-- Tabs -->
-    <div class="lb__tabs">
-      <button
-        class="lb__tab"
-        :class="{ 'lb__tab--active': activeTab === 'weekly' }"
-        @click="switchTab('weekly')"
-      >
-        Weekly
-      </button>
-      <button
-        class="lb__tab"
-        :class="{ 'lb__tab--active': activeTab === 'allTime' }"
-        @click="switchTab('allTime')"
-      >
-        All Time
-      </button>
+    <!-- Tabs using UI Kit -->
+    <div class="lb__tabs-wrap">
+      <BaseTabs :tabs="tabs" v-model="activeTab" />
     </div>
 
     <!-- Player Rank Banner -->
@@ -165,29 +156,8 @@ function getMedalEmoji(rank: number): string {
   font-size: 20px;
 }
 
-.lb__tabs {
-  display: flex;
-  margin: 12px 16px 0;
-  background: #22264a;
-  border-radius: 12px;
-  padding: 3px;
-}
-
-.lb__tab {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.lb__tab--active {
-  background: linear-gradient(135deg, #4a90d9, #357abd);
-  color: #fff;
+.lb__tabs-wrap {
+  padding: 12px 16px 0;
 }
 
 .lb__my-rank {

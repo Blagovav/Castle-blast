@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEconomyStore } from '@/stores/economy';
 import { usePlayerStore } from '@/stores/player';
+import { BaseModal, PrimaryCtaButton } from '@umbrella-software-corp/ui-kit';
 import {
   COST_LIVES_REFILL,
   COST_EXTRA_MOVES,
@@ -84,9 +85,9 @@ async function confirmPurchase() {
       </button>
     </div>
 
-    <!-- Purchase Confirm Modal -->
-    <div v-if="showConfirm && selectedItem" class="shop__overlay" @click.self="showConfirm = false">
-      <div class="shop__modal">
+    <!-- Purchase Confirm Modal (using UI Kit BaseModal) -->
+    <BaseModal v-if="showConfirm && selectedItem" @close="showConfirm = false" max-width="300px">
+      <div class="shop__modal-content">
         <div class="shop__modal-icon" :style="{ background: selectedItem.color }">
           {{ selectedItem.icon }}
         </div>
@@ -95,10 +96,10 @@ async function confirmPurchase() {
         <div class="shop__modal-price">{{ selectedItem.price }} ⭐</div>
         <div class="shop__modal-actions">
           <button class="shop__btn-cancel" @click="showConfirm = false">Cancel</button>
-          <button class="shop__btn-buy" @click="confirmPurchase">Buy</button>
+          <PrimaryCtaButton @click="confirmPurchase">Buy Now</PrimaryCtaButton>
         </div>
       </div>
-    </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -199,23 +200,8 @@ async function confirmPurchase() {
   white-space: nowrap;
 }
 
-.shop__overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.shop__modal {
-  background: #1e2a4a;
-  border-radius: 20px;
-  padding: 28px;
+.shop__modal-content {
   text-align: center;
-  min-width: 260px;
-  max-width: 300px;
 }
 
 .shop__modal-icon {

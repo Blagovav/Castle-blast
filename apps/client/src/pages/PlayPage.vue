@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGameStore } from '@/stores/game';
 import { GameEngine } from '@/engine/GameEngine';
+import { BaseModal, PrimaryCtaButton } from '@umbrella-software-corp/ui-kit';
 
 const props = defineProps<{ levelNum: number }>();
 const router = useRouter();
@@ -72,9 +73,9 @@ onUnmounted(() => {
       <p v-if="loading" class="play__loading">Loading...</p>
     </div>
 
-    <!-- Win/Lose Modal -->
-    <div v-if="gameStore.showResult" class="play__modal-overlay">
-      <div class="play__modal">
+    <!-- Win/Lose Modal (UI Kit) -->
+    <BaseModal v-if="gameStore.showResult" @close="goBack" :show-close="false">
+      <div class="play__modal-content">
         <h2 v-if="gameStore.result?.starsEarned">Level Complete!</h2>
         <h2 v-else>Level Failed</h2>
 
@@ -88,12 +89,12 @@ onUnmounted(() => {
         <p>Moves used: {{ gameStore.result?.movesUsed }}</p>
 
         <div class="play__modal-actions">
-          <button @click="goBack">Home</button>
-          <button v-if="!gameStore.result?.starsEarned" @click="goBack">Retry</button>
-          <button v-else @click="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })">Next</button>
+          <button class="play__btn-secondary" @click="goBack">Home</button>
+          <PrimaryCtaButton v-if="!gameStore.result?.starsEarned" @click="goBack">Retry</PrimaryCtaButton>
+          <PrimaryCtaButton v-else @click="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })">Next Level</PrimaryCtaButton>
         </div>
       </div>
-    </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -159,25 +160,11 @@ onUnmounted(() => {
   opacity: 0.5;
 }
 
-.play__modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.play__modal {
-  background: #1e2a4a;
-  border-radius: 16px;
-  padding: 32px;
+.play__modal-content {
   text-align: center;
-  min-width: 260px;
 }
 
-.play__modal h2 {
+.play__modal-content h2 {
   margin-bottom: 16px;
   font-size: 24px;
 }
@@ -192,7 +179,7 @@ onUnmounted(() => {
   color: #ffd700;
 }
 
-.play__modal p {
+.play__modal-content p {
   margin: 4px 0;
   opacity: 0.8;
 }
@@ -204,18 +191,14 @@ onUnmounted(() => {
   margin-top: 20px;
 }
 
-.play__modal-actions button {
+.play__btn-secondary {
   padding: 10px 24px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #4a90d9, #357abd);
+  background: #333;
   color: #fff;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-}
-
-.play__modal-actions button:active {
-  transform: scale(0.95);
 }
 </style>

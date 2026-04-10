@@ -5,6 +5,7 @@ import { router } from './router';
 import { useAuthStore } from './stores/auth';
 import { usePlayerStore } from './stores/player';
 import { useEconomyStore } from './stores/economy';
+import '@umbrella-software-corp/ui-kit/style.css';
 
 const app = createApp(App);
 const pinia = createPinia();
