@@ -3,9 +3,10 @@
   "configurations": [
     {
       "name": "client",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:client"],
-      "port": 5173
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5174"],
+      "cwd": "apps/client",
+      "port": 5174
     }
   ]
 }

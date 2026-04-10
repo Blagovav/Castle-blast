@@ -3,14 +3,12 @@ import type { LevelDefinition } from '@castle-blast/shared';
 import { Board } from './Board.js';
 import { BoardRenderer } from './BoardRenderer.js';
 import { MatchDetector } from './MatchDetector.js';
-import { CascadeResolver } from './CascadeResolver.js';
 import { DeadBoardDetector } from './DeadBoardDetector.js';
 import { SpecialTileLogic } from './SpecialTileLogic.js';
 import { RngBias } from './RngBias.js';
 import { LevelObjectiveTracker } from './LevelObjective.js';
 import { InputHandler } from './InputHandler.js';
-import { AnimationManager } from './AnimationManager.js';
-import type { GridPos, EngineEvents } from './types.js';
+import type { GridPos, EngineEvents, TileType } from './types.js';
 
 type EventName = keyof EngineEvents;
 type EventCallback = (...args: any[]) => void;
@@ -25,13 +23,11 @@ export class GameEngine {
   private board!: Board;
   private renderer!: BoardRenderer;
   private matchDetector: MatchDetector;
-  private cascadeResolver: CascadeResolver;
   private deadBoardDetector: DeadBoardDetector;
   private specialTileLogic: SpecialTileLogic;
   private rngBias: RngBias;
   private objectiveTracker!: LevelObjectiveTracker;
   private inputHandler!: InputHandler;
-  private animationManager!: AnimationManager;
   private levelDef: LevelDefinition;
   private container: HTMLElement;
 
@@ -46,7 +42,6 @@ export class GameEngine {
     this.levelDef = options.levelDef;
 
     this.matchDetector = new MatchDetector();
-    this.cascadeResolver = new CascadeResolver(this.matchDetector);
     this.deadBoardDetector = new DeadBoardDetector(this.matchDetector);
     this.specialTileLogic = new SpecialTileLogic();
     this.rngBias = new RngBias(this.matchDetector);
@@ -80,9 +75,6 @@ export class GameEngine {
     );
     this.app.stage.addChild(this.renderer.container);
 
-    // Create animation manager
-    this.animationManager = new AnimationManager(this.renderer);
-
     // Create input handler
     this.inputHandler = new InputHandler(this.app, this.renderer, (a, b) => this.handleSwap(a, b));
 
@@ -94,8 +86,8 @@ export class GameEngine {
     // Ensure no dead board at start
     if (!this.deadBoardDetector.hasValidMoves(this.board)) {
       this.deadBoardDetector.reshuffle(this.board);
-      this.renderer.renderAll();
     }
+    this.renderer.renderAll();
   }
 
   /** Handle a swap attempt */
@@ -108,28 +100,17 @@ export class GameEngine {
     this.processing = true;
     this.inputHandler.setEnabled(false);
 
-    // Check for special+special combo
-    const tileA = this.board.getTile(a.row, a.col)!;
-    const tileB = this.board.getTile(b.row, b.col)!;
-
-    if (tileA.special !== 'none' && tileB.special !== 'none') {
-      await this.handleCombo(a, b);
-      this.processing = false;
-      this.inputHandler.setEnabled(true);
-      return;
-    }
-
-    // Perform swap
+    // Perform swap on the board data
     this.board.swap(a, b);
-    await this.animationManager.animateSwap(a, b);
 
-    // Check for matches
+    // Check for matches after swap
     const matches = this.matchDetector.findMatches(this.board);
 
     if (matches.length === 0) {
       // No match — swap back
       this.board.swap(a, b);
-      this.renderer.renderAll(); // Re-render to fix sprite positions
+      // Brief visual feedback: show swap then swap back
+      this.renderer.renderAll();
       this.emit('swapRejected', a, b);
       this.processing = false;
       this.inputHandler.setEnabled(true);
@@ -139,9 +120,12 @@ export class GameEngine {
     // Valid match — consume move
     this.movesLeft--;
     this.emit('moveUsed', this.movesLeft);
-    this.emit('tileSwapped', a, b);
 
-    // Process cascades
+    // Show the swapped state
+    this.renderer.renderAll();
+    await this.delay(100);
+
+    // Process all cascades
     await this.processCascades();
 
     // Check win/lose
@@ -151,46 +135,28 @@ export class GameEngine {
     this.inputHandler.setEnabled(true);
   }
 
-  /** Handle combo when two special tiles are swapped */
-  private async handleCombo(a: GridPos, b: GridPos): Promise<void> {
-    this.movesLeft--;
-    this.emit('moveUsed', this.movesLeft);
-
-    const affected = this.specialTileLogic.combo(this.board, a, b);
-    const points = affected.length * 30;
-    this.score += points;
-    this.objectiveTracker.addScore(points);
-    this.emit('scoreChanged', this.score);
-
-    // Animate destruction
-    await this.animationManager.animateDestroy(affected);
-    this.board.removeTiles(affected);
-
-    // Cascade
-    await this.processCascades();
-    this.checkGameEnd();
-  }
-
-  /** Process all cascades (gravity + fill + match + repeat) */
+  /** Process all cascades (match → remove → gravity → fill → repeat) */
   private async processCascades(): Promise<void> {
-    let hasMatches = true;
+    let cascadeCount = 0;
+    const maxCascades = 50; // Safety limit
 
-    while (hasMatches) {
-      // Find current matches
+    while (cascadeCount < maxCascades) {
+      // Find matches
       const matches = this.matchDetector.findMatches(this.board);
-      if (matches.length === 0) {
-        hasMatches = false;
-        break;
-      }
+      if (matches.length === 0) break;
 
-      // Calculate score
+      cascadeCount++;
+
+      // Collect all matched positions
       const allPositions = this.matchDetector.getUniquePositions(matches);
-      const points = allPositions.length * 10;
+
+      // Score: 10 points per tile, bonus for cascades
+      const points = allPositions.length * 10 * cascadeCount;
       this.score += points;
       this.objectiveTracker.addScore(points);
       this.emit('scoreChanged', this.score);
 
-      // Track collected tile types
+      // Track collected tile types for objectives
       for (const pos of allPositions) {
         const tile = this.board.getTile(pos.row, pos.col);
         if (tile) {
@@ -198,10 +164,11 @@ export class GameEngine {
         }
       }
 
-      // Check for specials to create
+      // Determine specials to create
+      const specialsToCreate: { pos: GridPos; type: TileType; special: string }[] = [];
       const intersections = this.matchDetector.detectIntersections(matches);
-      const specialsToCreate: { pos: GridPos; type: number; special: string }[] = [];
 
+      // T/L intersections → bomb
       for (const iPos of intersections) {
         const tile = this.board.getTile(iPos.row, iPos.col);
         if (tile) {
@@ -209,12 +176,14 @@ export class GameEngine {
         }
       }
 
+      // Long matches → rockets
+      const intersectionSet = new Set(intersections.map(p => `${p.row},${p.col}`));
       for (const match of matches) {
         const special = this.matchDetector.determineSpecial(match);
         if (special !== 'none') {
           const midIdx = Math.floor(match.positions.length / 2);
           const pos = match.positions[midIdx];
-          if (!intersections.find(p => p.row === pos.row && p.col === pos.col)) {
+          if (!intersectionSet.has(`${pos.row},${pos.col}`)) {
             const tile = this.board.getTile(pos.row, pos.col);
             if (tile) {
               specialsToCreate.push({ pos, type: tile.type, special });
@@ -223,14 +192,16 @@ export class GameEngine {
         }
       }
 
-      // Check if any matched tiles are specials (activate them)
+      // Activate any matched special tiles
+      const extraPositions: GridPos[] = [];
       for (const pos of allPositions) {
         const tile = this.board.getTile(pos.row, pos.col);
         if (tile && tile.special !== 'none') {
           const affected = this.specialTileLogic.activate(this.board, pos);
           for (const ap of affected) {
-            if (!allPositions.find(p => p.row === ap.row && p.col === ap.col)) {
-              allPositions.push(ap);
+            if (!allPositions.find(p => p.row === ap.row && p.col === ap.col) &&
+                !extraPositions.find(p => p.row === ap.row && p.col === ap.col)) {
+              extraPositions.push(ap);
             }
           }
           this.score += affected.length * 20;
@@ -239,42 +210,40 @@ export class GameEngine {
         }
       }
 
-      // Animate destruction
-      await this.animationManager.animateDestroy(allPositions);
-
-      // Remove tiles from board (except specials being created)
+      // Combine all positions to remove
+      const allRemove = [...allPositions, ...extraPositions];
       const specialPosSet = new Set(specialsToCreate.map(s => `${s.pos.row},${s.pos.col}`));
-      for (const pos of allPositions) {
+
+      // Remove tiles (except ones being replaced by specials)
+      for (const pos of allRemove) {
         if (!specialPosSet.has(`${pos.row},${pos.col}`)) {
-          this.board.removeTiles([pos]);
+          this.board.setTile(pos.row, pos.col, null);
         }
       }
 
-      // Create specials
+      // Place created specials
       for (const { pos, type, special } of specialsToCreate) {
-        this.board.setTile(pos.row, pos.col, { type: type as any, special: special as any });
+        this.board.setTile(pos.row, pos.col, { type, special: special as any });
       }
 
-      // Apply gravity
-      const fallen = this.board.applyGravity();
+      // Animate removal
+      this.renderer.renderAll();
+      await this.delay(150);
 
-      // Get biased type for RNG if player is struggling
+      // Apply gravity
+      this.board.applyGravity();
+      this.renderer.renderAll();
+      await this.delay(100);
+
+      // Fill empty cells with new tiles
       const biasedType = this.rngBias.getBiasedType(
         this.board,
         this.movesLeft,
         this.levelDef.rngBiasThreshold,
       );
-
-      // Fill empty cells
-      const spawned = this.board.fillEmpty(biasedType);
-
-      // Re-render everything (simpler and more reliable than incremental updates)
+      this.board.fillEmpty(biasedType);
       this.renderer.renderAll();
-
-      // Animate fall
-      // For simplicity in this first version, we just re-render.
-      // TODO: Implement incremental animation for smoother cascades
-      await this.delay(200); // Brief pause between cascade steps
+      await this.delay(100);
     }
 
     // Check for dead board

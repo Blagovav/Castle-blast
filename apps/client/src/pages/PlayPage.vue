@@ -59,13 +59,14 @@ onUnmounted(() => {
     <header class="play__hud">
       <button class="play__back" @click="goBack">←</button>
       <span class="play__level">Level {{ levelNum }}</span>
-      <div class="play__stat">
-        <span class="play__stat-label">Moves</span>
+      <div class="play__stat play__stat--moves">
+        <img src="/sprites/icon_moves.png" class="play__stat-icon" alt="" onerror="this.style.display='none'" />
         <span class="play__stat-value">{{ gameStore.movesLeft }}</span>
+        <span class="play__stat-label">moves</span>
       </div>
-      <div class="play__stat">
-        <span class="play__stat-label">Score</span>
-        <span class="play__stat-value">{{ gameStore.score }}</span>
+      <div class="play__stat play__stat--score">
+        <img src="/sprites/icon_star_gold.png" class="play__stat-icon" alt="" onerror="this.style.display='none'" />
+        <span class="play__stat-value">{{ gameStore.score.toLocaleString() }}</span>
       </div>
     </header>
 
@@ -109,43 +110,59 @@ onUnmounted(() => {
 .play__hud {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #16213e;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.4);
   z-index: 10;
 }
 
 .play__back {
-  background: none;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   color: #fff;
-  font-size: 22px;
+  font-size: 18px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
 }
 
 .play__level {
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 15px;
   flex: 1;
 }
 
 .play__stat {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  min-width: 50px;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.play__stat--moves {
+  border: 1px solid rgba(74, 144, 217, 0.3);
+}
+
+.play__stat--score {
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.play__stat-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .play__stat-label {
   font-size: 10px;
-  opacity: 0.6;
-  text-transform: uppercase;
+  opacity: 0.5;
 }
 
 .play__stat-value {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .play__canvas {

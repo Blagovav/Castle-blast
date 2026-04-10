@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { usePlayerStore } from '@/stores/player';
 import { useEconomyStore } from '@/stores/economy';
 import { MAX_LIVES } from '@castle-blast/shared';
+import { ScreenLayout, CoinsCounter, PrimaryCtaButton, InlineEnergyBar } from '@umbrella-software-corp/ui-kit';
 
 const { user } = useTelegram();
 const router = useRouter();
@@ -22,6 +23,8 @@ const levels = computed(() => {
   }));
 });
 
+const energyPercent = computed(() => (playerStore.lives / MAX_LIVES) * 100);
+
 function playLevel(num: number) {
   if (num > currentLevel.value) return;
   if (!playerStore.canPlay) return;
@@ -35,29 +38,39 @@ function playLevel(num: number) {
     <header class="home__topbar">
       <div class="home__user">
         <div class="home__avatar">{{ user?.first_name?.[0] ?? '?' }}</div>
-        <span>{{ user?.first_name ?? 'Player' }}</span>
+        <div class="home__user-info">
+          <span class="home__username">{{ user?.first_name ?? 'Player' }}</span>
+          <span class="home__user-level">Level {{ currentLevel }}</span>
+        </div>
       </div>
       <div class="home__currencies">
-        <div class="home__currency">
-          <span class="home__currency-icon">🪙</span>
-          <span>{{ economyStore.coins }}</span>
+        <div class="home__currency home__currency--coins">
+          <img src="/sprites/icon_coin.png" class="home__currency-img" alt="" />
+          <span>{{ economyStore.coins.toLocaleString() }}</span>
         </div>
-        <div class="home__currency">
-          <span class="home__currency-icon">⭐</span>
+        <div class="home__currency home__currency--stars">
+          <img src="/sprites/icon_star_gold.png" class="home__currency-img" alt="" />
           <span>{{ economyStore.stars }}</span>
         </div>
       </div>
     </header>
 
-    <!-- Title + Lives -->
-    <div class="home__hero">
-      <h1 class="home__title">Castle Blast</h1>
-      <div class="home__lives">
-        <span v-for="i in MAX_LIVES" :key="i" class="home__heart" :class="{ 'home__heart--empty': i > playerStore.lives }">
-          ❤️
-        </span>
-        <span v-if="playerStore.nextLifeIn" class="home__lives-timer">{{ playerStore.nextLifeIn }}</span>
+    <!-- Energy Bar -->
+    <div class="home__energy">
+      <div class="home__energy-bar">
+        <div class="home__energy-fill" :style="{ width: energyPercent + '%' }"></div>
       </div>
+      <div class="home__energy-info">
+        <img src="/sprites/icon_heart_full.png" class="home__energy-icon" alt="" />
+        <span class="home__energy-count">{{ playerStore.lives }}/{{ MAX_LIVES }}</span>
+        <span v-if="playerStore.nextLifeIn" class="home__energy-timer">{{ playerStore.nextLifeIn }}</span>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="home__logo">
+      <img v-if="false" src="/sprites/logo.png" alt="Castle Blast" class="home__logo-img" />
+      <h1 class="home__title">Castle Blast</h1>
     </div>
 
     <!-- Level Select Grid -->
@@ -65,41 +78,41 @@ function playLevel(num: number) {
       <button
         v-for="level in levels"
         :key="level.num"
-        class="home__level-btn"
+        class="level-btn"
         :class="{
-          'home__level-btn--locked': !level.unlocked,
-          'home__level-btn--current': level.num === currentLevel,
-          'home__level-btn--completed': level.completed,
+          'level-btn--locked': !level.unlocked,
+          'level-btn--current': level.num === currentLevel,
+          'level-btn--completed': level.completed,
         }"
         :disabled="!level.unlocked"
         @click="playLevel(level.num)"
       >
-        <span class="home__level-num">{{ level.num }}</span>
-        <span v-if="level.num === currentLevel" class="home__level-current">▶</span>
-        <span v-if="!level.unlocked" class="home__level-lock">🔒</span>
+        <span class="level-btn__num">{{ level.num }}</span>
+        <span v-if="level.num === currentLevel" class="level-btn__play">PLAY</span>
+        <span v-if="!level.unlocked" class="level-btn__lock">🔒</span>
       </button>
     </div>
 
     <!-- Bottom Nav -->
     <nav class="home__nav">
-      <router-link to="/kingdom" class="home__nav-item">
-        <span class="home__nav-icon">🏰</span>
+      <router-link to="/kingdom" class="nav-item">
+        <img src="/sprites/building_castle.png" class="nav-item__img" alt="" />
         <span>Kingdom</span>
       </router-link>
-      <router-link to="/leaderboard" class="home__nav-item">
-        <span class="home__nav-icon">🏆</span>
+      <router-link to="/leaderboard" class="nav-item">
+        <span class="nav-item__emoji">🏆</span>
         <span>Top</span>
       </router-link>
-      <router-link to="/" class="home__nav-item home__nav-item--active">
-        <span class="home__nav-icon">🎮</span>
+      <router-link to="/" class="nav-item nav-item--active">
+        <span class="nav-item__emoji">🎮</span>
         <span>Play</span>
       </router-link>
-      <router-link to="/referral" class="home__nav-item">
-        <span class="home__nav-icon">🎁</span>
+      <router-link to="/referral" class="nav-item">
+        <span class="nav-item__emoji">🎁</span>
         <span>Invite</span>
       </router-link>
-      <router-link to="/shop" class="home__nav-item">
-        <span class="home__nav-icon">🛒</span>
+      <router-link to="/shop" class="nav-item">
+        <span class="nav-item__emoji">🛒</span>
         <span>Shop</span>
       </router-link>
     </nav>
@@ -111,40 +124,56 @@ function playLevel(num: number) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #1a1a2e;
+  background: linear-gradient(180deg, #0f1028 0%, #1a1a3e 50%, #12122a 100%);
 }
 
+/* Top Bar */
 .home__topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: #16213e;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .home__user {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
-  font-size: 14px;
 }
 
 .home__avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4a90d9, #357abd);
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  color: #1a1a2e;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.home__user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.home__username {
   font-weight: 700;
   font-size: 14px;
 }
 
+.home__user-level {
+  font-size: 11px;
+  opacity: 0.5;
+}
+
 .home__currencies {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .home__currency {
@@ -152,109 +181,149 @@ function playLevel(num: number) {
   align-items: center;
   gap: 4px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   padding: 4px 10px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.home__currency-icon {
-  font-size: 14px;
+.home__currency-img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
-.home__hero {
+/* Energy Bar */
+.home__energy {
+  padding: 6px 12px;
+}
+
+.home__energy-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.home__energy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4466, #ff6b8a);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.home__energy-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.home__energy-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.home__energy-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff6b8a;
+}
+
+.home__energy-timer {
+  font-size: 11px;
+  color: #ffd700;
+  margin-left: auto;
+}
+
+/* Logo */
+.home__logo {
   text-align: center;
-  padding: 16px 16px 8px;
+  padding: 8px 0 4px;
+}
+
+.home__logo-img {
+  height: 48px;
 }
 
 .home__title {
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 900;
   background: linear-gradient(135deg, #ffd700, #ff6b35);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
+  text-shadow: none;
 }
 
-.home__lives {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  font-size: 18px;
-}
-
-.home__heart--empty {
-  opacity: 0.25;
-  filter: grayscale(1);
-}
-
-.home__lives-timer {
-  font-size: 12px;
-  color: #ffd700;
-  margin-left: 8px;
-  font-weight: 600;
-}
-
+/* Level Grid */
 .home__levels {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   overflow-y: auto;
   align-content: start;
 }
 
-.home__level-btn {
+.level-btn {
   position: relative;
   aspect-ratio: 1;
   border: none;
-  border-radius: 14px;
-  background: linear-gradient(145deg, #3a7bd5, #2c5fa1);
+  border-radius: 12px;
   color: #fff;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   transition: transform 0.1s;
-  box-shadow: 0 3px 0 #1e3a6e;
+  background: linear-gradient(145deg, #3a6fd8, #2855a8);
+  box-shadow: 0 3px 0 #1c3a70, inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
-.home__level-btn:active:not(:disabled) {
+.level-btn:active:not(:disabled) {
   transform: scale(0.93) translateY(2px);
-  box-shadow: 0 1px 0 #1e3a6e;
+  box-shadow: 0 1px 0 #1c3a70;
 }
 
-.home__level-btn--locked {
-  background: #2a2a3e;
-  box-shadow: 0 3px 0 #1a1a2a;
+.level-btn--locked {
+  background: linear-gradient(145deg, #2a2a3e, #222235);
+  box-shadow: 0 3px 0 #151525;
   cursor: not-allowed;
 }
 
-.home__level-btn--current {
-  background: linear-gradient(145deg, #ff8c00, #e67300);
-  box-shadow: 0 3px 0 #b35900;
+.level-btn--current {
+  background: linear-gradient(145deg, #ff8c00, #e06800);
+  box-shadow: 0 3px 0 #a04500, inset 0 1px 0 rgba(255,255,255,0.2);
   animation: pulse 2s infinite;
+}
+
+.level-btn--completed {
+  background: linear-gradient(145deg, #2d8f4e, #1e6b38);
+  box-shadow: 0 3px 0 #14482a, inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.06); }
 }
 
-.home__level-num {
-  font-size: 17px;
+.level-btn__num {
+  font-size: 16px;
   font-weight: 800;
 }
 
-.home__level-current {
-  font-size: 8px;
+.level-btn__play {
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  opacity: 0.9;
 }
 
-.home__level-lock {
+.level-btn__lock {
   font-size: 14px;
   position: absolute;
   top: 50%;
@@ -262,34 +331,43 @@ function playLevel(num: number) {
   transform: translate(-50%, -50%);
 }
 
-.home__level-btn--locked .home__level-num {
+.level-btn--locked .level-btn__num {
   opacity: 0;
 }
 
+/* Bottom Nav */
 .home__nav {
   display: flex;
-  background: #16213e;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2px 0;
 }
 
-.home__nav-item {
+.nav-item {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 0;
-  color: rgba(255, 255, 255, 0.5);
+  gap: 1px;
+  padding: 8px 0 6px;
+  color: rgba(255, 255, 255, 0.4);
   text-decoration: none;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
+  transition: color 0.2s;
 }
 
-.home__nav-item--active {
+.nav-item--active {
   color: #ffd700;
 }
 
-.home__nav-icon {
+.nav-item__img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.nav-item__emoji {
   font-size: 20px;
 }
 </style>

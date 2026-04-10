@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { Board } from './Board.js';
 import { TilePool } from './TilePool.js';
 import type { GridPos, TileType, SpecialType } from './types.js';
@@ -7,8 +7,9 @@ export class BoardRenderer {
   readonly container: Container;
   readonly tileContainer: Container;
   readonly effectsContainer: Container;
+  private bgContainer: Container;
   private tilePool: TilePool;
-  private tileSprites: Map<string, Graphics> = new Map();
+  private tileSprites: Map<string, Container> = new Map();
   private board: Board;
   private tileSize: number;
   private offsetX: number;
@@ -17,16 +18,18 @@ export class BoardRenderer {
   constructor(board: Board, canvasWidth: number, canvasHeight: number) {
     this.board = board;
     this.container = new Container();
+    this.bgContainer = new Container();
     this.tileContainer = new Container();
     this.effectsContainer = new Container();
 
+    this.container.addChild(this.bgContainer);
     this.container.addChild(this.tileContainer);
     this.container.addChild(this.effectsContainer);
 
-    // Calculate tile size to fit the board in canvas
-    const maxTileW = Math.floor((canvasWidth - 20) / board.width);
-    const maxTileH = Math.floor((canvasHeight - 20) / board.height);
-    this.tileSize = Math.min(maxTileW, maxTileH, 56);
+    // Calculate tile size to fit the board
+    const maxTileW = Math.floor((canvasWidth - 16) / board.width);
+    const maxTileH = Math.floor((canvasHeight - 16) / board.height);
+    this.tileSize = Math.min(maxTileW, maxTileH, 52);
 
     // Center the board
     const boardPixelW = board.width * this.tileSize;
@@ -38,28 +41,57 @@ export class BoardRenderer {
 
     this.tilePool = new TilePool(this.tileSize);
 
-    // Draw background cells
     this.drawBackground();
-
-    // Render initial tiles
     this.renderAll();
   }
 
   private drawBackground(): void {
     const bg = new Graphics();
+    const size = this.tileSize;
 
     for (let row = 0; row < this.board.height; row++) {
       for (let col = 0; col < this.board.width; col++) {
+        const x = col * size;
+        const y = row * size;
+
         if (this.board.isActive(row, col)) {
-          const x = col * this.tileSize;
-          const y = row * this.tileSize;
-          bg.roundRect(x + 1, y + 1, this.tileSize - 2, this.tileSize - 2, 6);
-          bg.fill({ color: 0x2a2a4a, alpha: 0.5 });
+          // Active cell — dark subtle background
+          const isLight = (row + col) % 2 === 0;
+          bg.roundRect(x + 1, y + 1, size - 2, size - 2, 6);
+          bg.fill({ color: isLight ? 0x2a2a4e : 0x252545, alpha: 0.6 });
+        } else if (this.board.cells[row][col] === 'blocked') {
+          // Blocked cell — stone/wall block (VISIBLE)
+          this.drawBlockedCell(bg, x, y, size);
         }
       }
     }
 
-    this.container.addChildAt(bg, 0);
+    this.bgContainer.addChild(bg);
+  }
+
+  /** Draw a stone block for blocked cells */
+  private drawBlockedCell(g: Graphics, x: number, y: number, size: number): void {
+    // Stone base
+    g.roundRect(x + 1, y + 1, size - 2, size - 2, 4);
+    g.fill({ color: 0x4a4a5e });
+
+    // Stone texture lines
+    g.roundRect(x + 3, y + 3, size - 6, size - 6, 3);
+    g.fill({ color: 0x3d3d52 });
+
+    // Crack lines for detail
+    g.moveTo(x + size * 0.3, y + 3);
+    g.lineTo(x + size * 0.4, y + size * 0.5);
+    g.lineTo(x + size * 0.25, y + size - 3);
+    g.stroke({ color: 0x333346, width: 1 });
+
+    g.moveTo(x + size * 0.7, y + size * 0.2);
+    g.lineTo(x + size * 0.6, y + size * 0.7);
+    g.stroke({ color: 0x333346, width: 1 });
+
+    // Top highlight
+    g.roundRect(x + 3, y + 3, size - 6, size * 0.25, 3);
+    g.fill({ color: 0x5a5a6e, alpha: 0.4 });
   }
 
   /** Render all tiles from current board state */
@@ -81,7 +113,7 @@ export class BoardRenderer {
   }
 
   /** Add a tile sprite at grid position */
-  addTileSprite(row: number, col: number, type: TileType, special: SpecialType = 'none'): Graphics {
+  addTileSprite(row: number, col: number, type: TileType, special: SpecialType = 'none'): Container {
     const sprite = this.tilePool.acquire(type, special);
     const { x, y } = this.gridToPixel(row, col);
     sprite.position.set(x, y);
@@ -91,7 +123,7 @@ export class BoardRenderer {
   }
 
   /** Remove a tile sprite */
-  removeTileSprite(row: number, col: number): Graphics | undefined {
+  removeTileSprite(row: number, col: number): Container | undefined {
     const k = this.key(row, col);
     const sprite = this.tileSprites.get(k);
     if (sprite) {
@@ -102,19 +134,8 @@ export class BoardRenderer {
   }
 
   /** Get the sprite at a grid position */
-  getTileSprite(row: number, col: number): Graphics | undefined {
+  getTileSprite(row: number, col: number): Container | undefined {
     return this.tileSprites.get(this.key(row, col));
-  }
-
-  /** Move sprite key from one position to another (after gravity) */
-  moveSpriteKey(fromRow: number, fromCol: number, toRow: number, toCol: number): void {
-    const fromKey = this.key(fromRow, fromCol);
-    const toKey = this.key(toRow, toCol);
-    const sprite = this.tileSprites.get(fromKey);
-    if (sprite) {
-      this.tileSprites.delete(fromKey);
-      this.tileSprites.set(toKey, sprite);
-    }
   }
 
   /** Convert grid position to pixel coordinates (center of tile) */
@@ -127,7 +148,6 @@ export class BoardRenderer {
 
   /** Convert pixel coordinates to grid position */
   pixelToGrid(px: number, py: number): GridPos | null {
-    // Adjust for container offset
     const localX = px - this.offsetX;
     const localY = py - this.offsetY;
 
