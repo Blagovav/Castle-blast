@@ -1,0 +1,18 @@
+{
+  "level": 6,
+  "gridWidth": 9,
+  "gridHeight": 9,
+  "tileTypes": 4,
+  "maxMoves": 26,
+  "blocked": [
+    [0,0],[1,0],[2,0],
+    [0,1],[1,1],
+    [0,2],
+    [8,6],
+    [7,7],[8,7],
+    [6,8],[7,8],[8,8]
+  ],
+  "objectives": [{ "type": "score", "target": 2000 }],
+  "starThresholds": [2000, 4000, 8000],
+  "rngBiasThreshold": 3
+}

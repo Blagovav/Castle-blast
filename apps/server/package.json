@@ -1,0 +1,33 @@
+{
+  "name": "@castle-blast/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@castle-blast/shared": "*",
+    "express": "^5.1",
+    "drizzle-orm": "^0.43",
+    "pg": "^8.13",
+    "ioredis": "^5.4",
+    "jsonwebtoken": "^9.0",
+    "zod": "^3.23",
+    "cors": "^2.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0",
+    "@types/pg": "^8.11",
+    "@types/jsonwebtoken": "^9.0",
+    "@types/cors": "^2.8",
+    "typescript": "^5.7",
+    "tsx": "^4.19",
+    "drizzle-kit": "^0.31"
+  }
+}

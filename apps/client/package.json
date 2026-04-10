@@ -1,0 +1,26 @@
+{
+  "name": "@castle-blast/client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@castle-blast/shared": "*",
+    "vue": "^3.5",
+    "vue-router": "^4.5",
+    "pinia": "^2.3",
+    "pixi.js": "^8.6",
+    "zod": "^3.23"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2",
+    "typescript": "^5.7",
+    "vite": "^6.1",
+    "vue-tsc": "^2.2"
+  }
+}

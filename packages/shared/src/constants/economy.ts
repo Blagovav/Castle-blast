@@ -1,0 +1,11 @@
+export const MAX_LIVES = 5;
+export const LIFE_REGEN_MS = 20 * 60 * 1000; // 20 minutes
+export const LIFE_REGEN_PREMIUM_MS = 10 * 60 * 1000; // 10 minutes for premium
+export const OFFLINE_CAP_HOURS = 8;
+export const OFFLINE_CAP_PREMIUM_HOURS = 12;
+export const COST_LIVES_REFILL = 1; // Stars
+export const COST_EXTRA_MOVES = 1;
+export const COST_BOOSTER_PACK = 1;
+export const COST_STARTER_PACK = 3;
+export const COST_PREMIUM = 150;
+export const EXTRA_MOVES_COUNT = 3;
