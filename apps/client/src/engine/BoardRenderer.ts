@@ -29,7 +29,7 @@ export class BoardRenderer {
     // Calculate tile size to fit the board
     const maxTileW = Math.floor((canvasWidth - 16) / board.width);
     const maxTileH = Math.floor((canvasHeight - 16) / board.height);
-    this.tileSize = Math.min(maxTileW, maxTileH, 52);
+    this.tileSize = Math.min(maxTileW, maxTileH, 60);
 
     // Center the board
     const boardPixelW = board.width * this.tileSize;
@@ -42,6 +42,12 @@ export class BoardRenderer {
     this.tilePool = new TilePool(this.tileSize);
 
     this.drawBackground();
+    // Don't render tiles yet — call preloadAndRender() after construction
+  }
+
+  /** Preload sprite textures then render the board */
+  async preloadAndRender(): Promise<void> {
+    await this.tilePool.preload();
     this.renderAll();
   }
 
@@ -55,10 +61,10 @@ export class BoardRenderer {
         const y = row * size;
 
         if (this.board.isActive(row, col)) {
-          // Active cell — dark subtle background
+          // Active cell — checkerboard subtle background
           const isLight = (row + col) % 2 === 0;
-          bg.roundRect(x + 1, y + 1, size - 2, size - 2, 6);
-          bg.fill({ color: isLight ? 0x2a2a4e : 0x252545, alpha: 0.6 });
+          bg.roundRect(x + 1, y + 1, size - 2, size - 2, 8);
+          bg.fill({ color: isLight ? 0x343460 : 0x2e2e55, alpha: 0.7 });
         } else if (this.board.cells[row][col] === 'blocked') {
           // Blocked cell — stone/wall block (VISIBLE)
           this.drawBlockedCell(bg, x, y, size);

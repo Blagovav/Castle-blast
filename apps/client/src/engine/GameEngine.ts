@@ -1,4 +1,4 @@
-import { Application } from 'pixi.js';
+import { Application, Text, TextStyle, Container } from 'pixi.js';
 import type { LevelDefinition } from '@castle-blast/shared';
 import { Board } from './Board.js';
 import { BoardRenderer } from './BoardRenderer.js';
@@ -83,11 +83,14 @@ export class GameEngine {
     this.score = 0;
     this.objectiveTracker = new LevelObjectiveTracker(this.levelDef);
 
+    // Preload sprites then render
+    await this.renderer.preloadAndRender();
+
     // Ensure no dead board at start
     if (!this.deadBoardDetector.hasValidMoves(this.board)) {
       this.deadBoardDetector.reshuffle(this.board);
+      this.renderer.renderAll();
     }
-    this.renderer.renderAll();
   }
 
   /** Handle a swap attempt */
@@ -100,6 +103,16 @@ export class GameEngine {
     this.processing = true;
     this.inputHandler.setEnabled(false);
 
+    // Animate swap visually first
+    const spriteA = this.renderer.getTileSprite(a.row, a.col);
+    const spriteB = this.renderer.getTileSprite(b.row, b.col);
+    const pixA = this.renderer.gridToPixel(a.row, a.col);
+    const pixB = this.renderer.gridToPixel(b.row, b.col);
+
+    if (spriteA && spriteB) {
+      await this.tweenSwap(spriteA, pixA, pixB, spriteB, pixB, pixA, 180);
+    }
+
     // Perform swap on the board data
     this.board.swap(a, b);
 
@@ -107,9 +120,12 @@ export class GameEngine {
     const matches = this.matchDetector.findMatches(this.board);
 
     if (matches.length === 0) {
-      // No match — swap back
+      // No match — swap back data
       this.board.swap(a, b);
-      // Brief visual feedback: show swap then swap back
+      // Animate swap back
+      if (spriteA && spriteB) {
+        await this.tweenSwap(spriteA, pixB, pixA, spriteB, pixA, pixB, 180);
+      }
       this.renderer.renderAll();
       this.emit('swapRejected', a, b);
       this.processing = false;
@@ -121,9 +137,9 @@ export class GameEngine {
     this.movesLeft--;
     this.emit('moveUsed', this.movesLeft);
 
-    // Show the swapped state
+    // Re-render with swapped data
     this.renderer.renderAll();
-    await this.delay(100);
+    await this.delay(50);
 
     // Process all cascades
     await this.processCascades();
@@ -226,9 +242,18 @@ export class GameEngine {
         this.board.setTile(pos.row, pos.col, { type, special: special as any });
       }
 
+      // Show score popup at center of matched area
+      if (allPositions.length > 0) {
+        const avgRow = allPositions.reduce((s, p) => s + p.row, 0) / allPositions.length;
+        const avgCol = allPositions.reduce((s, p) => s + p.col, 0) / allPositions.length;
+        const pixPos = this.renderer.gridToPixel(Math.round(avgRow), Math.round(avgCol));
+        const label = cascadeCount > 1 ? `+${points} x${cascadeCount}!` : `+${points}`;
+        this.showScorePopup(label, pixPos.x, pixPos.y, cascadeCount > 1);
+      }
+
       // Animate removal
       this.renderer.renderAll();
-      await this.delay(150);
+      await this.delay(180);
 
       // Apply gravity
       this.board.applyGravity();
@@ -267,6 +292,65 @@ export class GameEngine {
     } else if (this.movesLeft <= 0) {
       this.emit('levelFailed');
     }
+  }
+
+  /** Animate two sprites swapping positions */
+  private tweenSwap(
+    spriteA: Container, fromA: { x: number; y: number }, toA: { x: number; y: number },
+    spriteB: Container, fromB: { x: number; y: number }, toB: { x: number; y: number },
+    durationMs: number,
+  ): Promise<void> {
+    return new Promise(resolve => {
+      const start = performance.now();
+      const tick = () => {
+        const elapsed = performance.now() - start;
+        const t = Math.min(elapsed / durationMs, 1);
+        const e = 1 - (1 - t) * (1 - t); // easeOutQuad
+        spriteA.x = fromA.x + (toA.x - fromA.x) * e;
+        spriteA.y = fromA.y + (toA.y - fromA.y) * e;
+        spriteB.x = fromB.x + (toB.x - fromB.x) * e;
+        spriteB.y = fromB.y + (toB.y - fromB.y) * e;
+        if (t < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /** Show floating score popup at position */
+  private showScorePopup(text: string, x: number, y: number, isCombo: boolean): void {
+    const style = new TextStyle({
+      fontFamily: 'Arial',
+      fontSize: isCombo ? 22 : 16,
+      fontWeight: 'bold',
+      fill: isCombo ? '#ffd700' : '#ffffff',
+      stroke: { color: '#000000', width: 3 },
+      dropShadow: { color: '#000000', blur: 2, distance: 1 },
+    });
+    const label = new Text({ text, style });
+    label.anchor.set(0.5);
+    label.position.set(x, y);
+    label.alpha = 1;
+    this.renderer.effectsContainer.addChild(label);
+
+    // Animate floating up and fading
+    const startY = y;
+    const startTime = performance.now();
+    const duration = 800;
+    const tick = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      label.y = startY - 40 * t;
+      label.alpha = 1 - t * t;
+      if (isCombo) label.scale.set(1 + t * 0.3);
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        label.removeFromParent();
+        label.destroy();
+      }
+    };
+    requestAnimationFrame(tick);
   }
 
   private delay(ms: number): Promise<void> {
