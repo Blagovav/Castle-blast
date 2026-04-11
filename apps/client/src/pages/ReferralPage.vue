@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEconomyStore } from '@/stores/economy';
 import { useTelegram } from '@/composables/useTelegram';
+import { ScreenLayout, PrimaryCtaButton, ProgressBar } from '@umbrella-software-corp/ui-kit';
 
 const router = useRouter();
 const economyStore = useEconomyStore();
 const { user } = useTelegram();
-const tg = window.Telegram?.WebApp;
 
 const referralCode = computed(() => `ref_${user.value?.id ?? '000000'}`);
 const referralLink = computed(() => `https://t.me/CastleBlastBot?start=${referralCode.value}`);
@@ -26,16 +26,6 @@ const nextReward = computed(() => rewards.value.find(r => !r.claimed && totalRef
 function goBack() {
   router.push({ name: 'home' });
 }
-
-onMounted(() => {
-  tg?.BackButton.show();
-  tg?.BackButton.onClick(goBack);
-});
-
-onUnmounted(() => {
-  tg?.BackButton.hide();
-  tg?.BackButton.offClick(goBack);
-});
 
 function copyLink() {
   navigator.clipboard.writeText(referralLink.value).then(() => {
@@ -60,12 +50,7 @@ function claimReward(threshold: number) {
 </script>
 
 <template>
-  <div class="referral">
-    <header class="referral__header">
-      <button class="referral__back" @click="goBack">←</button>
-      <h2>Invite Friends</h2>
-    </header>
-
+  <ScreenLayout title="Invite Friends" @back="goBack">
     <!-- Hero -->
     <div class="referral__hero">
       <div class="referral__hero-icon">🎁</div>
@@ -90,9 +75,9 @@ function claimReward(threshold: number) {
         <button class="referral__btn referral__btn--copy" @click="copyLink">
           {{ copied ? 'Copied!' : 'Copy Link' }}
         </button>
-        <button class="referral__btn referral__btn--share" @click="shareLink">
+        <PrimaryCtaButton @click="shareLink">
           Share via Telegram
-        </button>
+        </PrimaryCtaButton>
       </div>
     </div>
 
@@ -115,7 +100,8 @@ function claimReward(threshold: number) {
           <span class="referral__reward-req">{{ r.threshold }} friend{{ r.threshold > 1 ? 's' : '' }}</span>
         </div>
         <div class="referral__reward-progress">
-          <span>{{ Math.min(totalReferred, r.threshold) }}/{{ r.threshold }}</span>
+          <ProgressBar :value="Math.min(totalReferred, r.threshold)" :max="r.threshold" />
+          <span class="referral__reward-progress-text">{{ Math.min(totalReferred, r.threshold) }}/{{ r.threshold }}</span>
         </div>
         <button
           v-if="totalReferred >= r.threshold && !r.claimed"
@@ -128,38 +114,10 @@ function claimReward(threshold: number) {
         <span v-else class="referral__locked-badge">🔒</span>
       </div>
     </div>
-  </div>
+  </ScreenLayout>
 </template>
 
 <style scoped>
-.referral {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #1a1a2e;
-  overflow-y: auto;
-}
-
-.referral__header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #16213e;
-}
-
-.referral__back {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.referral__header h2 {
-  font-size: 20px;
-}
-
 .referral__hero {
   text-align: center;
   padding: 24px 16px 16px;
@@ -173,6 +131,7 @@ function claimReward(threshold: number) {
 .referral__hero h3 {
   font-size: 20px;
   margin-bottom: 4px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .referral__hero p {
@@ -191,14 +150,15 @@ function claimReward(threshold: number) {
   flex-direction: column;
   align-items: center;
   padding: 16px 32px;
-  background: #22264a;
+  background: var(--color-bg-card, #2B2A34);
   border-radius: 14px;
 }
 
 .referral__stat-value {
   font-size: 32px;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .referral__stat-label {
@@ -212,7 +172,7 @@ function claimReward(threshold: number) {
 
 .referral__link-box {
   padding: 12px;
-  background: #22264a;
+  background: var(--color-bg-card, #2B2A34);
   border-radius: 10px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -237,15 +197,11 @@ function claimReward(threshold: number) {
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .referral__btn--copy {
-  background: #333;
-  color: #fff;
-}
-
-.referral__btn--share {
-  background: linear-gradient(135deg, #0088cc, #0066aa);
+  background: var(--color-bg-card, #2B2A34);
   color: #fff;
 }
 
@@ -257,6 +213,7 @@ function claimReward(threshold: number) {
   font-size: 16px;
   margin-bottom: 10px;
   opacity: 0.8;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .referral__reward {
@@ -264,7 +221,7 @@ function claimReward(threshold: number) {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: #22264a;
+  background: var(--color-bg-card, #2B2A34);
   border-radius: 12px;
   margin-bottom: 8px;
 }
@@ -278,7 +235,7 @@ function claimReward(threshold: number) {
 }
 
 .referral__reward--available {
-  border: 1px solid #ffd700;
+  border: 1px solid var(--color-gold, #FFD700);
 }
 
 .referral__reward-icon {
@@ -297,6 +254,7 @@ function claimReward(threshold: number) {
 .referral__reward-name {
   font-weight: 700;
   font-size: 14px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .referral__reward-req {
@@ -305,25 +263,32 @@ function claimReward(threshold: number) {
 }
 
 .referral__reward-progress {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+}
+
+.referral__reward-progress-text {
+  font-size: 10px;
   opacity: 0.6;
-  min-width: 30px;
-  text-align: center;
+  white-space: nowrap;
 }
 
 .referral__claim-btn {
   padding: 6px 14px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #1a1a2e;
+  background: var(--gradient-gold, linear-gradient(135deg, #FFD700, #FFA500));
+  color: var(--color-bg-darkest, #13121D);
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .referral__claimed-badge {
-  color: #2ecc71;
+  color: var(--accent-green, #C5FF00);
   font-size: 18px;
   font-weight: 700;
 }

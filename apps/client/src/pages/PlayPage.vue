@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGameStore } from '@/stores/game';
 import { GameEngine } from '@/engine/GameEngine';
-import { BaseModal, PrimaryCtaButton } from '@umbrella-software-corp/ui-kit';
+import { GameWinOverlay, GameLoseOverlay } from '@umbrella-software-corp/ui-kit';
 
 const props = defineProps<{ levelNum: number }>();
 const router = useRouter();
@@ -74,28 +74,37 @@ onUnmounted(() => {
       <p v-if="loading" class="play__loading">Loading...</p>
     </div>
 
-    <!-- Win/Lose Modal (UI Kit) -->
-    <BaseModal v-if="gameStore.showResult" @close="goBack" :show-close="false">
-      <div class="play__modal-content">
-        <h2 v-if="gameStore.result?.starsEarned">Level Complete!</h2>
-        <h2 v-else>Level Failed</h2>
+    <!-- Win Overlay (UI Kit) -->
+    <GameWinOverlay
+      v-if="gameStore.showResult && gameStore.result?.starsEarned"
+      :earned-stars="gameStore.result?.starsEarned ?? 0"
+      :score="gameStore.result?.score ?? 0"
+      :coins-reward="Math.floor((gameStore.result?.score ?? 0) * 0.1)"
+      victory-label="Level Complete!"
+      score-label="Your score"
+      share-label="Share"
+      continue-label="Continue"
+      home-label="Home"
+      next-level-label="Next Level"
+      @continue="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })"
+      @home="goBack"
+      @next-level="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })"
+    />
 
-        <div v-if="gameStore.result?.starsEarned" class="play__stars">
-          <span v-for="i in 3" :key="i" :class="{ 'play__star--earned': i <= (gameStore.result?.starsEarned ?? 0) }">
-            ★
-          </span>
-        </div>
-
-        <p>Score: {{ gameStore.result?.score }}</p>
-        <p>Moves used: {{ gameStore.result?.movesUsed }}</p>
-
-        <div class="play__modal-actions">
-          <button class="play__btn-secondary" @click="goBack">Home</button>
-          <PrimaryCtaButton v-if="!gameStore.result?.starsEarned" @click="goBack">Retry</PrimaryCtaButton>
-          <PrimaryCtaButton v-else @click="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })">Next Level</PrimaryCtaButton>
-        </div>
-      </div>
-    </BaseModal>
+    <!-- Lose Overlay (UI Kit) -->
+    <GameLoseOverlay
+      v-if="gameStore.showResult && !gameStore.result?.starsEarned"
+      :current-energy="4"
+      title-label="Level Failed"
+      energy-left-label="Lives left"
+      exit-label="Home"
+      exit-to-menu-label="Home"
+      replay-level-label="Retry"
+      next-level-label="Next Level"
+      @exit="goBack"
+      @exit-to-menu="goBack"
+      @replay-level="router.push({ name: 'play', params: { levelNum } })"
+    />
   </div>
 </template>
 
@@ -105,6 +114,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   position: relative;
+  background: var(--color-bg-darkest, #13121D);
 }
 
 .play__hud {
@@ -112,12 +122,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--color-bg-dark, #1B1A26);
   z-index: 10;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .play__back {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-card, #2B2A34);
   border: none;
   color: #fff;
   font-size: 18px;
@@ -130,6 +141,7 @@ onUnmounted(() => {
   font-weight: 800;
   font-size: 15px;
   flex: 1;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .play__stat {
@@ -163,6 +175,7 @@ onUnmounted(() => {
 .play__stat-value {
   font-size: 16px;
   font-weight: 800;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .play__canvas {
@@ -175,47 +188,18 @@ onUnmounted(() => {
   text-align: center;
   padding-top: 40%;
   opacity: 0.5;
-}
-
-.play__modal-content {
-  text-align: center;
-}
-
-.play__modal-content h2 {
-  margin-bottom: 16px;
-  font-size: 24px;
-}
-
-.play__stars {
-  font-size: 36px;
-  margin-bottom: 16px;
-  color: #555;
-}
-
-.play__star--earned {
-  color: #ffd700;
-}
-
-.play__modal-content p {
-  margin: 4px 0;
-  opacity: 0.8;
-}
-
-.play__modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 20px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .play__btn-secondary {
   padding: 10px 24px;
   border: none;
   border-radius: 10px;
-  background: #333;
+  background: var(--color-bg-card, #2B2A34);
   color: #fff;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 </style>

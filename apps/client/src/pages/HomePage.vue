@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useTelegram } from '@/composables/useTelegram';
 import { useRouter } from 'vue-router';
 import { usePlayerStore } from '@/stores/player';
 import { useEconomyStore } from '@/stores/economy';
 import { MAX_LIVES } from '@castle-blast/shared';
-import { ScreenLayout, CoinsCounter, PrimaryCtaButton, InlineEnergyBar } from '@umbrella-software-corp/ui-kit';
+import { CoinsCounter, InlineEnergyBar, EnergyPlusButton, NoEnergyModal, OfflineIncomePopup } from '@umbrella-software-corp/ui-kit';
 
 const { user } = useTelegram();
 const router = useRouter();
@@ -14,6 +14,9 @@ const economyStore = useEconomyStore();
 
 const TOTAL_LEVELS = 50;
 const currentLevel = computed(() => playerStore.profile?.currentLevel ?? 1);
+const showNoEnergy = ref(false);
+const showOfflineIncome = ref(false);
+const offlineAmount = ref(247);
 
 const levels = computed(() => {
   return Array.from({ length: TOTAL_LEVELS }, (_, i) => ({
@@ -27,14 +30,23 @@ const energyPercent = computed(() => (playerStore.lives / MAX_LIVES) * 100);
 
 function playLevel(num: number) {
   if (num > currentLevel.value) return;
-  if (!playerStore.canPlay) return;
+  if (!playerStore.canPlay) {
+    showNoEnergy.value = true;
+    return;
+  }
   router.push({ name: 'play', params: { levelNum: num } });
+}
+
+function collectOffline() {
+  economyStore.coins += offlineAmount.value;
+  offlineAmount.value = 0;
+  showOfflineIncome.value = false;
 }
 </script>
 
 <template>
   <div class="home">
-    <!-- Top Bar -->
+    <!-- Top Bar with UI Kit components -->
     <header class="home__topbar">
       <div class="home__user">
         <div class="home__avatar">{{ user?.first_name?.[0] ?? '?' }}</div>
@@ -44,27 +56,14 @@ function playLevel(num: number) {
         </div>
       </div>
       <div class="home__currencies">
-        <div class="home__currency home__currency--coins">
-          <img src="/sprites/icon_coin.png" class="home__currency-img" alt="" />
-          <span>{{ economyStore.coins.toLocaleString() }}</span>
-        </div>
-        <div class="home__currency home__currency--stars">
-          <img src="/sprites/icon_star_gold.png" class="home__currency-img" alt="" />
-          <span>{{ economyStore.stars }}</span>
-        </div>
+        <CoinsCounter :value="economyStore.coins" />
       </div>
     </header>
 
-    <!-- Energy Bar -->
-    <div class="home__energy">
-      <div class="home__energy-bar">
-        <div class="home__energy-fill" :style="{ width: energyPercent + '%' }"></div>
-      </div>
-      <div class="home__energy-info">
-        <img src="/sprites/icon_heart_full.png" class="home__energy-icon" alt="" />
-        <span class="home__energy-count">{{ playerStore.lives }}/{{ MAX_LIVES }}</span>
-        <span v-if="playerStore.nextLifeIn" class="home__energy-timer">{{ playerStore.nextLifeIn }}</span>
-      </div>
+    <!-- Energy Bar (UI Kit) -->
+    <div class="home__energy-wrap">
+      <InlineEnergyBar :energy="playerStore.lives" :max-energy="MAX_LIVES" />
+      <EnergyPlusButton @click="router.push({ name: 'shop' })" />
     </div>
 
     <!-- Logo -->
@@ -116,6 +115,30 @@ function playLevel(num: number) {
         <span>Shop</span>
       </router-link>
     </nav>
+
+    <!-- No Energy Modal (UI Kit) -->
+    <NoEnergyModal
+      v-if="showNoEnergy"
+      :time-to-next="playerStore.nextLifeIn ?? ''"
+      title="Out of lives!"
+      description="You need lives to play. Wait or buy more!"
+      next-energy-label="Next life in"
+      shop-label="Go to Shop"
+      wait-label="Wait"
+      @close="showNoEnergy = false"
+      @go-shop="showNoEnergy = false; router.push({ name: 'shop' })"
+    />
+
+    <!-- Offline Income Popup (UI Kit) -->
+    <OfflineIncomePopup
+      :visible="showOfflineIncome && offlineAmount > 0"
+      :amount="offlineAmount"
+      title="Welcome back!"
+      subtitle="Your kingdom earned while you were away"
+      collect-label="Collect"
+      @close="showOfflineIncome = false"
+      @claim="collectOffline"
+    />
   </div>
 </template>
 
@@ -177,41 +200,14 @@ function playLevel(num: number) {
   gap: 8px;
 }
 
-.home__currency {
+/* CoinsCounter from UI kit handles styling */
+
+/* Energy Bar (UI Kit) */
+.home__energy-wrap {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.home__currency-img {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
-
-/* Energy Bar */
-.home__energy {
-  padding: 6px 12px;
-}
-
-.home__energy-bar {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.home__energy-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #ff4466, #ff6b8a);
-  border-radius: 4px;
-  transition: width 0.3s;
+  padding: 4px 12px;
 }
 
 .home__energy-info {
@@ -219,23 +215,6 @@ function playLevel(num: number) {
   align-items: center;
   gap: 4px;
   margin-top: 3px;
-}
-
-.home__energy-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.home__energy-count {
-  font-size: 12px;
-  font-weight: 700;
-  color: #ff6b8a;
-}
-
-.home__energy-timer {
-  font-size: 11px;
-  color: var(--color-gold, #FFD700);
-  margin-left: auto;
 }
 
 /* Logo */

@@ -180,18 +180,19 @@ function getMedalEmoji(rank: number): string {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4a90d9, #357abd);
+  background: linear-gradient(135deg, var(--accent-blue, #0060DF), #357abd);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
   flex-shrink: 0;
 }
 
 .lb__avatar--me {
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #1a1a2e;
+  background: var(--gradient-gold, linear-gradient(135deg, #FFD700, #FFA500));
+  color: var(--color-bg-darkest, #13121D);
 }
 
 .lb__info {
@@ -204,6 +205,7 @@ function getMedalEmoji(rank: number): string {
 .lb__name {
   font-weight: 600;
   font-size: 14px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .lb__level {
@@ -214,6 +216,7 @@ function getMedalEmoji(rank: number): string {
 .lb__score {
   font-weight: 700;
   font-size: 14px;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 </style>
