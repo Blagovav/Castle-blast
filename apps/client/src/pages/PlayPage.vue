@@ -58,36 +58,27 @@ onUnmounted(() => {
 
 <template>
   <div class="play">
-    <!-- Royal Match style HUD -->
+    <!-- HUD Banner — connected panels like Royal Match -->
     <header class="play__hud">
-      <!-- King Avatar -->
       <div class="play__avatar">
-        <img src="/sprites/king_avatar.png" class="play__avatar-img" alt="" onerror="this.parentElement.innerHTML='👑'" />
+        <img src="/sprites/king_avatar.png" class="play__avatar-img" alt="" onerror="this.textContent='👑'" />
       </div>
-
-      <!-- Objectives -->
-      <div class="play__objectives">
-        <span class="play__obj-label">Goals</span>
-        <div class="play__obj-icons">
-          <div class="play__obj-item">
-            <span class="play__obj-icon">⭐</span>
-            <span class="play__obj-count">{{ gameStore.score }}</span>
-          </div>
+      <div class="play__hud-banner">
+        <div class="play__goals-panel">
+          <span class="play__panel-label">Goals</span>
+          <div class="play__panel-value">⭐ {{ gameStore.score }}</div>
         </div>
-      </div>
-
-      <!-- Moves Counter -->
-      <div class="play__moves">
-        <span class="play__moves-label">Moves</span>
-        <span class="play__moves-value">{{ gameStore.movesLeft }}</span>
+        <div class="play__moves-panel">
+          <span class="play__panel-label">Moves</span>
+          <div class="play__moves-num">{{ gameStore.movesLeft }}</div>
+        </div>
       </div>
     </header>
 
-    <!-- Castle scene above board -->
-    <div class="play__scene">
-      <div class="play__tower play__tower--left"></div>
-      <div class="play__wall"></div>
-      <div class="play__tower play__tower--right"></div>
+    <!-- Castle wall scene -->
+    <div class="play__castle-wall">
+      <div class="play__battlement"></div>
+      <div class="play__bricks"></div>
     </div>
 
     <!-- Game Canvas -->
@@ -162,28 +153,28 @@ onUnmounted(() => {
   background: linear-gradient(180deg, #7ec8e8 0%, #5aaccc 40%, #8a8a7a 70%, #6a6a5a 100%);
 }
 
-/* HUD — Royal Match style */
+/* HUD Banner — Royal Match connected panels */
 .play__hud {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
+  align-items: flex-start;
+  padding: 4px 8px 0;
   flex-shrink: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 100%);
+  gap: 6px;
 }
 
 .play__avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
   overflow: hidden;
-  border: 3px solid #c8960a;
-  background: linear-gradient(135deg, #8b4513, #654321);
+  border: 3px solid #d4a010;
+  background: linear-gradient(135deg, #6a3a18, #4a2810);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  flex-shrink: 0;
 }
 
 .play__avatar-img {
@@ -192,127 +183,104 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-.play__objectives {
+.play__hud-banner {
+  flex: 1;
+  display: flex;
+  gap: 0;
+}
+
+.play__goals-panel {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(180deg, #7a2040, #5a1830);
-  padding: 6px 20px 8px;
-  border-radius: 0 0 16px 16px;
-  border: 2px solid #a03050;
+  background: linear-gradient(180deg, #8a2848, #6a1830);
+  padding: 5px 12px 7px;
+  border-radius: 0 0 0 14px;
+  border: 2px solid #a83858;
   border-top: none;
-  min-width: 100px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  border-right: 1px solid #a83858;
 }
 
-.play__obj-label {
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: rgba(255,255,255,0.7);
-  font-family: var(--font-family, "Unbounded"), sans-serif;
-}
-
-.play__obj-icons {
-  display: flex;
-  gap: 6px;
-}
-
-.play__obj-item {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.play__obj-icon { font-size: 14px; }
-
-.play__obj-count {
-  font-size: 13px;
-  font-weight: 800;
-  font-family: var(--font-family, "Unbounded"), sans-serif;
-}
-
-.play__moves {
+.play__moves-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(180deg, #7a2040, #5a1830);
-  padding: 6px 18px 8px;
-  border-radius: 0 0 16px 16px;
-  border: 2px solid #a03050;
+  background: linear-gradient(180deg, #8a2848, #6a1830);
+  padding: 5px 16px 7px;
+  border-radius: 0 0 14px 0;
+  border: 2px solid #a83858;
   border-top: none;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  border-left: 1px solid #6a1830;
+  min-width: 70px;
 }
 
-.play__moves-label {
-  font-size: 9px;
+.play__panel-label {
+  font-size: 8px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.65);
   font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
-.play__moves-value {
-  font-size: 32px;
+.play__panel-value {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.play__moves-num {
+  font-size: 28px;
   font-weight: 900;
   font-family: var(--font-family, "Unbounded"), sans-serif;
   text-shadow: 2px 3px 0 #000;
   line-height: 1;
-  color: #fff;
 }
 
-/* Castle scene decoration */
-.play__scene {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  height: 40px;
+/* Castle wall decoration between HUD and board */
+.play__castle-wall {
   flex-shrink: 0;
-  overflow: hidden;
-  padding: 0 20px;
-}
-
-.play__tower {
-  width: 28px;
-  height: 36px;
-  background: linear-gradient(180deg, #8a7a60, #6a5a40);
-  border-radius: 4px 4px 0 0;
+  height: 28px;
   position: relative;
+  margin: 0 16px;
 }
 
-.play__tower::before {
+.play__battlement {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(180deg, #8a7a5a, #6a5a3a);
+  border-radius: 4px 4px 0 0;
+}
+
+.play__battlement::before {
   content: '';
   position: absolute;
   top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-bottom: 10px solid #7a6a50;
-}
-
-.play__wall {
-  flex: 1;
-  height: 24px;
-  background: linear-gradient(180deg, #7a6a50, #5a4a30);
-  position: relative;
-}
-
-.play__wall::before {
-  content: '';
-  position: absolute;
-  top: 0;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 8px;
   background: repeating-linear-gradient(
     90deg,
-    #8a7a60 0px, #8a7a60 14px,
-    #6a5a40 14px, #6a5a40 16px
+    #8a7a5a 0px, #8a7a5a 18px,
+    transparent 18px, transparent 24px
+  );
+}
+
+.play__bricks {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(
+    90deg,
+    #7a6a4a 0px, #7a6a4a 22px,
+    #5a4a2a 22px, #5a4a2a 24px
   );
 }
 

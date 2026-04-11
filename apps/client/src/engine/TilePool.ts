@@ -15,21 +15,13 @@ const SPECIAL_SPRITE_PATHS: Record<string, string> = {
   bomb: '/sprites/special_bomb.png',
 };
 
-// Royal Match inspired bright colors
-const TILE_COLORS: Record<TileType, number> = {
-  0: 0xe82030, // Red diamond
-  1: 0x30b848, // Green tree
-  2: 0x3088e8, // Blue bucket
-  3: 0xf0c020, // Golden crown
-  4: 0xa040d0, // Purple gem
-};
-
-const TILE_SHAPES: Record<TileType, string> = {
-  0: 'diamond',  // Red = diamond shape
-  1: 'round',    // Green = rounded
-  2: 'round',    // Blue = rounded
-  3: 'hexagon',  // Yellow = hexagonal
-  4: 'diamond',  // Purple = diamond
+// Bold saturated colors like Royal Match
+const TILE_COLORS: Record<TileType, { main: number; dark: number; light: number; outline: number }> = {
+  0: { main: 0xe82030, dark: 0xa01520, light: 0xff5060, outline: 0x8a1018 }, // Red
+  1: { main: 0x30b848, dark: 0x208830, light: 0x60e070, outline: 0x186820 }, // Green
+  2: { main: 0x3088e8, dark: 0x2060b0, light: 0x60b0ff, outline: 0x184880 }, // Blue
+  3: { main: 0xf0c020, dark: 0xc09010, light: 0xffe050, outline: 0x907010 }, // Yellow
+  4: { main: 0xa840d0, dark: 0x7830a0, light: 0xc870f0, outline: 0x582878 }, // Purple
 };
 
 export class TilePool {
@@ -42,42 +34,29 @@ export class TilePool {
     this.tileSize = tileSize;
   }
 
-  /** Preload all textures — MUST be awaited before using acquire() */
   async preload(): Promise<void> {
     const promises: Promise<void>[] = [];
-
     for (const [type, path] of Object.entries(TILE_SPRITE_PATHS)) {
       promises.push(
-        Assets.load(path)
-          .then((tex: Texture) => { this.tileTextures.set(`tile_${type}`, tex); })
-          .catch(() => { /* sprite missing, will use fallback */ })
+        Assets.load(path).then((tex: Texture) => { this.tileTextures.set(`tile_${type}`, tex); }).catch(() => {})
       );
     }
-
     for (const [special, path] of Object.entries(SPECIAL_SPRITE_PATHS)) {
       promises.push(
-        Assets.load(path)
-          .then((tex: Texture) => { this.tileTextures.set(`special_${special}`, tex); })
-          .catch(() => {})
+        Assets.load(path).then((tex: Texture) => { this.tileTextures.set(`special_${special}`, tex); }).catch(() => {})
       );
     }
-
     await Promise.all(promises);
     this._ready = true;
   }
 
-  get ready(): boolean {
-    return this._ready;
-  }
+  get ready(): boolean { return this._ready; }
 
-  /** Get a tile visual */
   acquire(type: TileType, special: SpecialType = 'none', blocker: BlockerType = 'none', blockerHp: number = 0): Container {
     const container = new Container();
     this.active.add(container);
-    this.drawTile(container, type, special);
-    if (blocker !== 'none') {
-      this.drawBlockerOverlay(container, blocker, blockerHp);
-    }
+    this.drawTile3D(container, type, special);
+    if (blocker !== 'none') this.drawBlockerOverlay(container, blocker, blockerHp);
     container.visible = true;
     return container;
   }
@@ -99,171 +78,131 @@ export class TilePool {
     this.active.clear();
   }
 
-  private drawTile(container: Container, type: TileType, special: SpecialType): void {
+  /** Draw a bold 3D tile like Royal Match */
+  private drawTile3D(container: Container, type: TileType, special: SpecialType): void {
     const size = this.tileSize;
-    const innerSize = size - 1; // Nearly fill the whole cell
-
-    container.removeChildren();
-
-    const tileTex = this.tileTextures.get(`tile_${type}`);
-
+    const s = size * 0.46; // half-size for drawing
+    const colors = TILE_COLORS[type];
     const g = new Graphics();
-    const color = TILE_COLORS[type];
-    const shape = TILE_SHAPES[type];
-    const half = innerSize / 2;
 
-    // All tiles: fill cell with bold, saturated shape
-    if (shape === 'diamond') {
-      // Fat diamond filling the cell
-      g.moveTo(0, -half * 0.92);
-      g.lineTo(half * 0.92, 0);
-      g.lineTo(0, half * 0.92);
-      g.lineTo(-half * 0.92, 0);
+    // === OUTER DARK BORDER (3D depth) ===
+    g.roundRect(-s - 1, -s - 1, s * 2 + 2, s * 2 + 4, s * 0.3);
+    g.fill({ color: colors.outline });
+
+    // === MAIN BODY ===
+    g.roundRect(-s, -s, s * 2, s * 2, s * 0.28);
+    g.fill({ color: colors.main });
+
+    // === TOP HIGHLIGHT (3D shine) ===
+    g.roundRect(-s + 2, -s + 2, s * 2 - 4, s * 0.8, s * 0.25);
+    g.fill({ color: colors.light, alpha: 0.5 });
+
+    // === INNER SHAPE (gives each tile unique silhouette) ===
+    if (type === 0) {
+      // Red: diamond facet
+      g.moveTo(0, -s * 0.65);
+      g.lineTo(s * 0.55, 0);
+      g.lineTo(0, s * 0.65);
+      g.lineTo(-s * 0.55, 0);
       g.closePath();
-      g.fill({ color });
-      // 3D top facet
-      g.moveTo(0, -half * 0.92);
-      g.lineTo(half * 0.45, -half * 0.1);
-      g.lineTo(0, half * 0.05);
-      g.lineTo(-half * 0.45, -half * 0.1);
+      g.fill({ color: colors.light, alpha: 0.2 });
+    } else if (type === 1) {
+      // Green: leaf/circle
+      g.circle(0, s * 0.05, s * 0.5);
+      g.fill({ color: colors.light, alpha: 0.2 });
+    } else if (type === 2) {
+      // Blue: bucket shape
+      g.roundRect(-s * 0.4, -s * 0.3, s * 0.8, s * 0.7, s * 0.12);
+      g.fill({ color: colors.light, alpha: 0.2 });
+    } else if (type === 3) {
+      // Yellow: crown points
+      g.moveTo(-s * 0.5, s * 0.2);
+      g.lineTo(-s * 0.35, -s * 0.35);
+      g.lineTo(-s * 0.1, -s * 0.1);
+      g.lineTo(0, -s * 0.45);
+      g.lineTo(s * 0.1, -s * 0.1);
+      g.lineTo(s * 0.35, -s * 0.35);
+      g.lineTo(s * 0.5, s * 0.2);
       g.closePath();
-      g.fill({ color: 0xffffff, alpha: 0.25 });
-      // Top sparkle
-      g.circle(-half * 0.15, -half * 0.35, half * 0.1);
-      g.fill({ color: 0xffffff, alpha: 0.5 });
-    } else if (shape === 'hexagon') {
-      // Fat hexagon filling cell
-      const hr = half * 0.9;
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i - Math.PI / 6;
-        const px = Math.cos(angle) * hr;
-        const py = Math.sin(angle) * hr;
-        if (i === 0) g.moveTo(px, py);
-        else g.lineTo(px, py);
-      }
-      g.closePath();
-      g.fill({ color });
-      // Top highlight band
-      const hhr = hr * 0.7;
-      g.moveTo(-hhr * 0.8, -hr * 0.7);
-      g.lineTo(hhr * 0.8, -hr * 0.7);
-      g.lineTo(hhr * 0.5, -hr * 0.2);
-      g.lineTo(-hhr * 0.5, -hr * 0.2);
-      g.closePath();
-      g.fill({ color: 0xffffff, alpha: 0.25 });
-      // Sparkle
-      g.circle(-half * 0.2, -half * 0.3, half * 0.08);
-      g.fill({ color: 0xffffff, alpha: 0.55 });
+      g.fill({ color: colors.light, alpha: 0.25 });
     } else {
-      // Fat rounded rect filling cell
-      const r = half * 0.35;
-      g.roundRect(-half * 0.92, -half * 0.92, innerSize * 0.92, innerSize * 0.92, r);
-      g.fill({ color });
-      // Glossy top band
-      g.roundRect(-half * 0.82, -half * 0.82, innerSize * 0.82, innerSize * 0.32, r * 0.8);
-      g.fill({ color: 0xffffff, alpha: 0.3 });
-      // Sparkle
-      g.circle(-half * 0.35, -half * 0.4, half * 0.1);
-      g.fill({ color: 0xffffff, alpha: 0.5 });
+      // Purple: star
+      g.star(0, 0, 5, s * 0.25, s * 0.5);
+      g.fill({ color: colors.light, alpha: 0.2 });
     }
 
-    // Shadow at bottom
-    g.ellipse(0, half * 0.75, half * 0.5, half * 0.08);
-    g.fill({ color: 0x000000, alpha: 0.1 });
+    // === SPECULAR HIGHLIGHT (white dot) ===
+    g.circle(-s * 0.25, -s * 0.3, s * 0.12);
+    g.fill({ color: 0xffffff, alpha: 0.6 });
+    g.circle(-s * 0.15, -s * 0.2, s * 0.06);
+    g.fill({ color: 0xffffff, alpha: 0.8 });
+
+    // === BOTTOM SHADOW ===
+    g.ellipse(0, s * 0.85, s * 0.5, s * 0.08);
+    g.fill({ color: 0x000000, alpha: 0.08 });
 
     container.addChild(g);
 
-    // Special overlay
+    // === SPECIAL OVERLAY ===
     if (special !== 'none') {
-      const specialTex = this.tileTextures.get(`special_${special}`);
-      if (specialTex) {
-        const overlay = new Sprite(specialTex);
-        overlay.width = size * 0.45;
-        overlay.height = size * 0.45;
-        overlay.anchor.set(0.5);
-        overlay.alpha = 0.9;
-        container.addChild(overlay);
-      } else {
-        const sg = new Graphics();
-        if (special === 'rocket_h') {
-          sg.moveTo(-8, 0); sg.lineTo(8, 0);
-          sg.moveTo(5, -3); sg.lineTo(8, 0); sg.lineTo(5, 3);
-          sg.stroke({ color: 0xffffff, width: 2.5 });
-        } else if (special === 'rocket_v') {
-          sg.moveTo(0, -8); sg.lineTo(0, 8);
-          sg.moveTo(-3, 5); sg.lineTo(0, 8); sg.lineTo(3, 5);
-          sg.stroke({ color: 0xffffff, width: 2.5 });
-        } else if (special === 'bomb') {
-          sg.circle(0, 0, 7);
-          sg.fill({ color: 0xffffff, alpha: 0.7 });
-        }
-        container.addChild(sg);
+      const sg = new Graphics();
+      if (special === 'rocket_h') {
+        sg.roundRect(-s * 0.7, -3, s * 1.4, 6, 3);
+        sg.fill({ color: 0xffffff, alpha: 0.6 });
+        sg.moveTo(s * 0.4, -5); sg.lineTo(s * 0.6, 0); sg.lineTo(s * 0.4, 5);
+        sg.fill({ color: 0xffffff, alpha: 0.8 });
+      } else if (special === 'rocket_v') {
+        sg.roundRect(-3, -s * 0.7, 6, s * 1.4, 3);
+        sg.fill({ color: 0xffffff, alpha: 0.6 });
+        sg.moveTo(-5, s * 0.4); sg.lineTo(0, s * 0.6); sg.lineTo(5, s * 0.4);
+        sg.fill({ color: 0xffffff, alpha: 0.8 });
+      } else if (special === 'bomb') {
+        sg.circle(0, 0, s * 0.35);
+        sg.fill({ color: 0xffffff, alpha: 0.5 });
+        sg.star(0, 0, 8, s * 0.15, s * 0.4);
+        sg.fill({ color: 0xffffff, alpha: 0.3 });
       }
+      container.addChild(sg);
     }
   }
 
-  /** Draw blocker overlay on top of a tile */
+  /** Draw blocker overlay */
   private drawBlockerOverlay(container: Container, blocker: BlockerType, hp: number): void {
-    const size = this.tileSize;
-    const innerSize = size - 2;
+    const s = this.tileSize * 0.46;
     const g = new Graphics();
 
     if (blocker === 'stone' || blocker === 'stone2') {
-      // Stone overlay — semi-transparent grey with cracks
-      g.roundRect(-innerSize / 2, -innerSize / 2, innerSize, innerSize, 10);
-      g.fill({ color: 0x5a5a6e, alpha: hp > 1 ? 0.7 : 0.45 });
-
-      // Crack lines
-      g.moveTo(-innerSize * 0.15, -innerSize * 0.4);
-      g.lineTo(innerSize * 0.05, 0);
-      g.lineTo(-innerSize * 0.1, innerSize * 0.35);
-      g.stroke({ color: 0x333346, width: hp > 1 ? 2 : 1.5 });
-
+      g.roundRect(-s, -s, s * 2, s * 2, s * 0.28);
+      g.fill({ color: 0x6a6a7a, alpha: hp > 1 ? 0.65 : 0.4 });
+      // Cracks
+      g.moveTo(-s * 0.2, -s * 0.7); g.lineTo(s * 0.05, 0); g.lineTo(-s * 0.15, s * 0.6);
+      g.stroke({ color: 0x444455, width: hp > 1 ? 2 : 1.5 });
       if (hp > 1) {
-        // Extra cracks for 2HP
-        g.moveTo(innerSize * 0.2, -innerSize * 0.3);
-        g.lineTo(innerSize * 0.1, innerSize * 0.2);
-        g.stroke({ color: 0x333346, width: 1.5 });
+        g.moveTo(s * 0.25, -s * 0.5); g.lineTo(s * 0.15, s * 0.3);
+        g.stroke({ color: 0x444455, width: 1.5 });
       }
-
-      // Top highlight
-      g.roundRect(-innerSize / 2 + 3, -innerSize / 2 + 3, innerSize - 6, innerSize * 0.2, 6);
-      g.fill({ color: 0x8a8a9e, alpha: 0.3 });
+      g.roundRect(-s + 2, -s + 2, s * 2 - 4, s * 0.5, s * 0.2);
+      g.fill({ color: 0x8a8a9a, alpha: 0.25 });
     } else if (blocker === 'ice') {
-      // Ice overlay — blue-white semi-transparent
-      g.roundRect(-innerSize / 2, -innerSize / 2, innerSize, innerSize, 10);
-      g.fill({ color: 0x88ccff, alpha: 0.4 });
-
-      // Ice crystal lines
-      g.moveTo(-innerSize * 0.2, -innerSize * 0.3);
-      g.lineTo(0, 0);
-      g.lineTo(innerSize * 0.15, -innerSize * 0.25);
+      g.roundRect(-s, -s, s * 2, s * 2, s * 0.28);
+      g.fill({ color: 0x88ccff, alpha: 0.35 });
+      g.moveTo(-s * 0.3, -s * 0.5); g.lineTo(0, 0); g.lineTo(s * 0.2, -s * 0.4);
       g.stroke({ color: 0xaaddff, width: 1.5 });
-
-      g.moveTo(0, 0);
-      g.lineTo(innerSize * 0.1, innerSize * 0.3);
-      g.stroke({ color: 0xaaddff, width: 1 });
-
-      // Shine
-      g.circle(-innerSize * 0.2, -innerSize * 0.2, 4);
-      g.fill({ color: 0xffffff, alpha: 0.5 });
+      g.circle(-s * 0.25, -s * 0.3, 3);
+      g.fill({ color: 0xffffff, alpha: 0.6 });
     } else if (blocker === 'chain') {
-      // Chain overlay — X pattern
-      const off = innerSize * 0.35;
+      const off = s * 0.55;
       g.moveTo(-off, -off); g.lineTo(off, off);
       g.moveTo(off, -off); g.lineTo(-off, off);
-      g.stroke({ color: 0x888888, width: 3 });
-
-      g.circle(-off, -off, 3); g.fill({ color: 0x999999 });
-      g.circle(off, -off, 3); g.fill({ color: 0x999999 });
-      g.circle(-off, off, 3); g.fill({ color: 0x999999 });
-      g.circle(off, off, 3); g.fill({ color: 0x999999 });
+      g.stroke({ color: 0x777788, width: 3 });
+      g.circle(-off, -off, 3); g.fill({ color: 0x888899 });
+      g.circle(off, off, 3); g.fill({ color: 0x888899 });
+      g.circle(off, -off, 3); g.fill({ color: 0x888899 });
+      g.circle(-off, off, 3); g.fill({ color: 0x888899 });
     }
 
     container.addChild(g);
   }
 
-  get tilePixelSize(): number {
-    return this.tileSize;
-  }
+  get tilePixelSize(): number { return this.tileSize; }
 }
