@@ -62,7 +62,7 @@ export class TilePool {
 
   private drawTile(container: Container, type: TileType): void {
     const sz = this.tileSize;
-    const r = sz * 0.38; // tile radius — 76% of cell = visible gap
+    const r = sz * 0.47; // tile radius — 94% of cell, fills cell like Royal Match
     const c = TC[type];
     const g = new Graphics();
 
@@ -202,7 +202,7 @@ export class TilePool {
   }
 
   private drawSpecial(container: Container, special: SpecialType): void {
-    const r = this.tileSize * 0.38;
+    const r = this.tileSize * 0.47;
     const g = new Graphics();
     if (special === 'rocket_h') {
       g.roundRect(-r * 0.65, -2, r * 1.3, 4, 2);
@@ -224,7 +224,7 @@ export class TilePool {
   }
 
   private drawBlocker(container: Container, blocker: BlockerType, hp: number): void {
-    const r = this.tileSize * 0.38;
+    const r = this.tileSize * 0.47;
     const g = new Graphics();
     if (blocker === 'stone' || blocker === 'stone2') {
       g.roundRect(-r, -r, r * 2, r * 2, r * 0.25);

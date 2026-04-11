@@ -5,8 +5,8 @@ export const BIOMES: Record<BiomeType, BiomeConfig> = {
     type: 'castle',
     name: 'Royal Castle',
     bgColor: 0x87CEEB, // sky blue
-    cellColor1: 0xd4d0e8, // light lavender
-    cellColor2: 0xc8c4dc, // slightly darker lavender
+    cellColor1: 0xe8e4f0, // very light lavender (almost white)
+    cellColor2: 0xdcd8ea, // light lavender
     blockedColor: 0x8a8a9a,
     blockedHighlight: 0xa0a0b0,
   },
