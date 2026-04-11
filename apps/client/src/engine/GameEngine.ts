@@ -130,9 +130,11 @@ export class GameEngine {
     if (matches.length === 0) {
       // No match — swap back data
       this.board.swap(a, b);
-      // Animate swap back
+      // JUICE: Animate swap back + shake
       if (spriteA && spriteB) {
-        await this.tweenSwap(spriteA, pixB, pixA, spriteB, pixA, pixB, 180);
+        await this.tweenSwap(spriteA, pixB, pixA, spriteB, pixA, pixB, 150);
+        await this.animateShake(spriteA);
+        await this.animateShake(spriteB);
       }
       this.renderer.renderAll();
       this.emit('swapRejected', a, b);
@@ -262,14 +264,17 @@ export class GameEngine {
         this.showScorePopup(label, pixPos.x, pixPos.y, cascadeCount > 1);
       }
 
-      // Animate removal
-      this.renderer.renderAll();
-      await this.delay(180);
+      // === JUICE: Animate tile destruction (shrink + spin) ===
+      await this.animateDestroy(allRemove.filter(p => !specialPosSet.has(`${p.row},${p.col}`)));
 
       // Apply gravity
-      this.board.applyGravity();
+      const fallen = this.board.applyGravity();
+
+      // === JUICE: Animate tiles falling with bounce ===
       this.renderer.renderAll();
-      await this.delay(100);
+      if (fallen.length > 0) {
+        await this.animateFall(fallen);
+      }
 
       // Fill empty cells with new tiles
       const biasedType = this.rngBias.getBiasedType(
@@ -277,9 +282,13 @@ export class GameEngine {
         this.movesLeft,
         this.levelDef.rngBiasThreshold,
       );
-      this.board.fillEmpty(biasedType);
+      const spawned = this.board.fillEmpty(biasedType);
       this.renderer.renderAll();
-      await this.delay(100);
+
+      // === JUICE: Animate spawned tiles popping in ===
+      if (spawned.length > 0) {
+        await this.animateSpawn(spawned.map(s => s.pos));
+      }
     }
 
     // Check for dead board
@@ -336,6 +345,188 @@ export class GameEngine {
         }
       }
     }
+  }
+
+  /** JUICE: Animate tiles shrinking and spinning on destroy */
+  private async animateDestroy(positions: GridPos[]): Promise<void> {
+    const sprites = positions.map(p => this.renderer.getTileSprite(p.row, p.col)).filter(Boolean) as Container[];
+    if (sprites.length === 0) return;
+
+    // Emit particles at each position
+    for (const pos of positions) {
+      const pix = this.renderer.gridToPixel(pos.row, pos.col);
+      this.emitParticles(pix.x, pix.y, 5);
+    }
+
+    await this.tweenMultiple(sprites, 200, (sprite, t) => {
+      const e = t * t; // easeIn
+      sprite.scale.set(1 - e);
+      sprite.rotation = e * 0.5;
+      sprite.alpha = 1 - e;
+    });
+
+    // Re-render to remove destroyed tiles
+    this.renderer.renderAll();
+  }
+
+  /** JUICE: Animate tiles falling with overshoot bounce */
+  private async animateFall(moves: { from: GridPos; to: GridPos }[]): Promise<void> {
+    if (moves.length === 0) return;
+
+    const anims: { sprite: Container; startY: number; endY: number; dist: number }[] = [];
+    for (const { from, to } of moves) {
+      const sprite = this.renderer.getTileSprite(to.row, to.col);
+      if (!sprite) continue;
+      const startPix = this.renderer.gridToPixel(from.row, from.col);
+      const endPix = this.renderer.gridToPixel(to.row, to.col);
+      sprite.y = startPix.y; // Start from old position
+      anims.push({ sprite, startY: startPix.y, endY: endPix.y, dist: to.row - from.row });
+    }
+
+    if (anims.length === 0) return;
+
+    const duration = 250;
+    const start = performance.now();
+
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        const elapsed = performance.now() - start;
+        const t = Math.min(elapsed / duration, 1);
+
+        for (const { sprite, startY, endY } of anims) {
+          // Bounce easing: overshoot then settle
+          let e: number;
+          if (t < 0.7) {
+            e = (t / 0.7);
+            e = e * e; // accelerate
+          } else {
+            const bt = (t - 0.7) / 0.3;
+            e = 1 + Math.sin(bt * Math.PI) * 0.08; // slight bounce
+          }
+          sprite.y = startY + (endY - startY) * Math.min(e, 1.08);
+        }
+
+        if (t < 1) requestAnimationFrame(tick);
+        else {
+          // Snap to final positions
+          for (const { sprite, endY } of anims) sprite.y = endY;
+          resolve();
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /** JUICE: Animate tiles popping into existence */
+  private async animateSpawn(positions: GridPos[]): Promise<void> {
+    const sprites = positions.map(p => this.renderer.getTileSprite(p.row, p.col)).filter(Boolean) as Container[];
+    if (sprites.length === 0) return;
+
+    // Start all at scale 0
+    for (const s of sprites) s.scale.set(0);
+
+    // Stagger the pop-in slightly
+    const totalDuration = 200;
+    const start = performance.now();
+
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        const elapsed = performance.now() - start;
+        const t = Math.min(elapsed / totalDuration, 1);
+
+        for (let i = 0; i < sprites.length; i++) {
+          // Stagger each sprite by a tiny amount
+          const stagger = Math.min(i * 0.01, 0.3);
+          const localT = Math.max(0, Math.min((t - stagger) / (1 - stagger), 1));
+
+          // Elastic bounce easing
+          let e: number;
+          if (localT < 0.6) {
+            e = (localT / 0.6);
+            e = e * e;
+          } else {
+            const bt = (localT - 0.6) / 0.4;
+            e = 1 + Math.sin(bt * Math.PI) * 0.15;
+          }
+
+          sprites[i].scale.set(Math.min(e, 1.15));
+          sprites[i].alpha = Math.min(localT * 2, 1);
+        }
+
+        if (t < 1) requestAnimationFrame(tick);
+        else {
+          for (const s of sprites) { s.scale.set(1); s.alpha = 1; }
+          resolve();
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /** JUICE: Emit particle burst at position */
+  private emitParticles(x: number, y: number, count: number): void {
+    for (let i = 0; i < count; i++) {
+      const p = new Graphics();
+      const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+      const speed = 30 + Math.random() * 40;
+      const size = 2 + Math.random() * 3;
+      const color = [0xffd700, 0xff6b6b, 0x60e060, 0x60b0ff, 0xffa500][Math.floor(Math.random() * 5)];
+
+      p.circle(0, 0, size);
+      p.fill({ color });
+      p.position.set(x, y);
+      this.renderer.effectsContainer.addChild(p);
+
+      const startTime = performance.now();
+      const duration = 400 + Math.random() * 200;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+
+      const tick = () => {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        p.x = x + vx * t;
+        p.y = y + vy * t + 20 * t * t; // gravity
+        p.alpha = 1 - t;
+        p.scale.set(1 - t * 0.5);
+        if (t < 1) requestAnimationFrame(tick);
+        else { p.removeFromParent(); p.destroy(); }
+      };
+      requestAnimationFrame(tick);
+    }
+  }
+
+  /** Helper: tween multiple sprites with a custom update function */
+  private tweenMultiple(sprites: Container[], duration: number, update: (sprite: Container, t: number) => void): Promise<void> {
+    return new Promise(resolve => {
+      const start = performance.now();
+      const tick = () => {
+        const elapsed = performance.now() - start;
+        const t = Math.min(elapsed / duration, 1);
+        for (const s of sprites) update(s, t);
+        if (t < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /** JUICE: Quick horizontal shake for invalid swap */
+  private animateShake(sprite: Container): Promise<void> {
+    const origX = sprite.x;
+    const duration = 150;
+    const start = performance.now();
+    return new Promise(resolve => {
+      const tick = () => {
+        const elapsed = performance.now() - start;
+        const t = Math.min(elapsed / duration, 1);
+        const shake = Math.sin(t * Math.PI * 4) * 4 * (1 - t);
+        sprite.x = origX + shake;
+        if (t < 1) requestAnimationFrame(tick);
+        else { sprite.x = origX; resolve(); }
+      };
+      requestAnimationFrame(tick);
+    });
   }
 
   /** Animate two sprites swapping positions */
