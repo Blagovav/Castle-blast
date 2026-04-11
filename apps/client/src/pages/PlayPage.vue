@@ -36,7 +36,6 @@ onMounted(async () => {
     await engine.init();
     loading.value = false;
 
-    // Engine → Store
     engine.on('moveUsed', (movesLeft) => gameStore.setMovesLeft(movesLeft));
     engine.on('scoreChanged', (score) => gameStore.setScore(score));
     engine.on('levelComplete', (result) => gameStore.finishLevel(result));
@@ -56,25 +55,63 @@ onUnmounted(() => {
 
 <template>
   <div class="play">
+    <!-- Royal Match style HUD -->
     <header class="play__hud">
-      <button class="play__back" @click="goBack">←</button>
-      <span class="play__level">Level {{ levelNum }}</span>
-      <div class="play__stat play__stat--moves">
-        <img src="/sprites/icon_moves.png" class="play__stat-icon" alt="" onerror="this.style.display='none'" />
-        <span class="play__stat-value">{{ gameStore.movesLeft }}</span>
-        <span class="play__stat-label">moves</span>
+      <!-- King Avatar -->
+      <div class="play__avatar">
+        <img src="/sprites/king_avatar.png" class="play__avatar-img" alt="" onerror="this.parentElement.innerHTML='👑'" />
       </div>
-      <div class="play__stat play__stat--score">
-        <img src="/sprites/icon_star_gold.png" class="play__stat-icon" alt="" onerror="this.style.display='none'" />
-        <span class="play__stat-value">{{ gameStore.score.toLocaleString() }}</span>
+
+      <!-- Objectives -->
+      <div class="play__objectives">
+        <span class="play__obj-label">Goals</span>
+        <div class="play__obj-icons">
+          <div class="play__obj-item">
+            <span class="play__obj-icon">⭐</span>
+            <span class="play__obj-count">{{ gameStore.score }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moves Counter -->
+      <div class="play__moves">
+        <span class="play__moves-label">Moves</span>
+        <span class="play__moves-value">{{ gameStore.movesLeft }}</span>
       </div>
     </header>
 
+    <!-- Game Canvas -->
     <div ref="canvasRef" class="play__canvas">
-      <p v-if="loading" class="play__loading">Loading...</p>
+      <div v-if="loading" class="play__loading">
+        <div class="play__loading-spinner"></div>
+        <span>Loading Level {{ levelNum }}...</span>
+      </div>
     </div>
 
-    <!-- Win Overlay (UI Kit) -->
+    <!-- Boosters Bar -->
+    <div class="play__boosters">
+      <button class="play__booster" disabled>
+        <img src="/sprites/booster_rocket.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='🚀'" />
+        <span class="play__booster-lock">🔒</span>
+      </button>
+      <button class="play__booster" disabled>
+        <img src="/sprites/booster_bomb.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='💣'" />
+        <span class="play__booster-lock">🔒</span>
+      </button>
+      <button class="play__booster" disabled>
+        <img src="/sprites/booster_shuffle.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='🔀'" />
+        <span class="play__booster-lock">🔒</span>
+      </button>
+      <button class="play__booster" disabled>
+        <img src="/sprites/booster_color_bomb.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='🌈'" />
+        <span class="play__booster-lock">🔒</span>
+      </button>
+      <button class="play__booster-settings">
+        <span>⚙️</span>
+      </button>
+    </div>
+
+    <!-- Win Overlay -->
     <GameWinOverlay
       v-if="gameStore.showResult && gameStore.result?.starsEarned"
       :earned-stars="gameStore.result?.starsEarned ?? 0"
@@ -82,7 +119,6 @@ onUnmounted(() => {
       :coins-reward="Math.floor((gameStore.result?.score ?? 0) * 0.1)"
       victory-label="Level Complete!"
       score-label="Your score"
-      share-label="Share"
       continue-label="Continue"
       home-label="Home"
       next-level-label="Next Level"
@@ -91,16 +127,14 @@ onUnmounted(() => {
       @next-level="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })"
     />
 
-    <!-- Lose Overlay (UI Kit) -->
+    <!-- Lose Overlay -->
     <GameLoseOverlay
       v-if="gameStore.showResult && !gameStore.result?.starsEarned"
       :current-energy="4"
       title-label="Level Failed"
-      energy-left-label="Lives left"
       exit-label="Home"
       exit-to-menu-label="Home"
       replay-level-label="Retry"
-      next-level-label="Next Level"
       @exit="goBack"
       @exit-to-menu="goBack"
       @replay-level="router.push({ name: 'play', params: { levelNum } })"
@@ -110,74 +144,113 @@ onUnmounted(() => {
 
 <style scoped>
 .play {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  position: relative;
-  background: var(--color-bg-darkest, #13121D);
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #87CEEB 0%, #6bb3d9 60%, #8a9aaa 100%);
 }
 
+/* HUD — Royal Match style */
 .play__hud {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--color-bg-dark, #1B1A26);
-  z-index: 10;
-  font-family: var(--font-family, "Unbounded"), sans-serif;
-}
-
-.play__back {
-  background: var(--color-bg-card, #2B2A34);
-  border: none;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
+  justify-content: space-between;
   padding: 6px 10px;
-  border-radius: 8px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 100%);
 }
 
-.play__level {
-  font-weight: 800;
-  font-size: 15px;
-  flex: 1;
-  font-family: var(--font-family, "Unbounded"), sans-serif;
-}
-
-.play__stat {
+.play__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid #c8960a;
+  background: linear-gradient(135deg, #8b4513, #654321);
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.08);
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
-.play__stat--moves {
-  border: 1px solid rgba(74, 144, 217, 0.3);
+.play__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.play__stat--score {
-  border: 1px solid rgba(255, 215, 0, 0.3);
+.play__objectives {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, #7a2040, #5a1830);
+  padding: 4px 16px 6px;
+  border-radius: 0 0 14px 14px;
+  border: 2px solid #a03050;
+  border-top: none;
+  min-width: 90px;
 }
 
-.play__stat-icon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
+.play__obj-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.7);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
-.play__stat-label {
-  font-size: 10px;
-  opacity: 0.5;
+.play__obj-icons {
+  display: flex;
+  gap: 6px;
 }
 
-.play__stat-value {
-  font-size: 16px;
+.play__obj-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.play__obj-icon { font-size: 14px; }
+
+.play__obj-count {
+  font-size: 13px;
   font-weight: 800;
   font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
+.play__moves {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, #7a2040, #5a1830);
+  padding: 4px 14px 6px;
+  border-radius: 0 0 14px 14px;
+  border: 2px solid #a03050;
+  border-top: none;
+}
+
+.play__moves-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.7);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+}
+
+.play__moves-value {
+  font-size: 26px;
+  font-weight: 900;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+  text-shadow: var(--shadow-text, 1px 2px 0 #000);
+  line-height: 1;
+}
+
+/* Canvas */
 .play__canvas {
   flex: 1;
   position: relative;
@@ -185,21 +258,84 @@ onUnmounted(() => {
 }
 
 .play__loading {
-  text-align: center;
-  padding-top: 40%;
-  opacity: 0.5;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   font-family: var(--font-family, "Unbounded"), sans-serif;
+  font-size: 14px;
+  color: rgba(0,0,0,0.5);
 }
 
-.play__btn-secondary {
-  padding: 10px 24px;
-  border: none;
-  border-radius: 10px;
-  background: var(--color-bg-card, #2B2A34);
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
+.play__loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-top-color: #c8960a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Boosters Bar */
+.play__boosters {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,0.2));
+  flex-shrink: 0;
+  padding-bottom: max(8px, var(--tma-bottom-ui-safe-bottom, 0px));
+}
+
+.play__booster {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #c8960a;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f0d860, #c8960a);
   cursor: pointer;
-  font-family: var(--font-family, "Unbounded"), sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 0 #8a6a08;
+}
+
+.play__booster:disabled {
+  opacity: 0.7;
+}
+
+.play__booster-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.play__booster-lock {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 12px;
+}
+
+.play__booster-settings {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
 }
 </style>

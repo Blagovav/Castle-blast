@@ -15,12 +15,21 @@ const SPECIAL_SPRITE_PATHS: Record<string, string> = {
   bomb: '/sprites/special_bomb.png',
 };
 
+// Royal Match inspired bright colors
 const TILE_COLORS: Record<TileType, number> = {
-  0: 0xff4444,
-  1: 0x44bb44,
-  2: 0x4488ff,
-  3: 0xffaa00,
-  4: 0xcc44cc,
+  0: 0xe82030, // Red diamond
+  1: 0x30b848, // Green tree
+  2: 0x3088e8, // Blue bucket
+  3: 0xf0c020, // Golden crown
+  4: 0xa040d0, // Purple gem
+};
+
+const TILE_SHAPES: Record<TileType, string> = {
+  0: 'diamond',  // Red = diamond shape
+  1: 'round',    // Green = rounded
+  2: 'round',    // Blue = rounded
+  3: 'hexagon',  // Yellow = hexagonal
+  4: 'diamond',  // Purple = diamond
 };
 
 export class TilePool {
@@ -98,29 +107,59 @@ export class TilePool {
 
     const tileTex = this.tileTextures.get(`tile_${type}`);
 
-    // Draw polished colored gem tile
     const g = new Graphics();
     const color = TILE_COLORS[type];
+    const shape = TILE_SHAPES[type];
+    const half = innerSize / 2;
     const r = 10;
 
-    // Base tile with gradient-like effect
-    g.roundRect(-innerSize / 2, -innerSize / 2, innerSize, innerSize, r);
-    g.fill({ color });
+    // Draw shape based on tile type
+    if (shape === 'diamond') {
+      // Diamond/rhombus shape
+      g.moveTo(0, -half + 2);
+      g.lineTo(half - 2, 0);
+      g.lineTo(0, half - 2);
+      g.lineTo(-half + 2, 0);
+      g.closePath();
+      g.fill({ color });
+      // Highlight
+      g.moveTo(0, -half + 5);
+      g.lineTo(half * 0.5, -half * 0.15);
+      g.lineTo(0, -half * 0.05);
+      g.lineTo(-half * 0.5, -half * 0.15);
+      g.closePath();
+      g.fill({ color: 0xffffff, alpha: 0.35 });
+    } else if (shape === 'hexagon') {
+      // Hexagon shape
+      const hr = half - 3;
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        const px = Math.cos(angle) * hr;
+        const py = Math.sin(angle) * hr;
+        if (i === 0) g.moveTo(px, py);
+        else g.lineTo(px, py);
+      }
+      g.closePath();
+      g.fill({ color });
+      // Highlight
+      g.roundRect(-half * 0.5, -half + 5, half, half * 0.5, 4);
+      g.fill({ color: 0xffffff, alpha: 0.3 });
+    } else {
+      // Rounded/circle shape
+      g.roundRect(-half, -half, innerSize, innerSize, r);
+      g.fill({ color });
+      // Glossy highlight
+      g.roundRect(-half + 3, -half + 3, innerSize - 6, innerSize * 0.35, r - 2);
+      g.fill({ color: 0xffffff, alpha: 0.35 });
+    }
 
-    // Top highlight (glossy shine)
-    g.roundRect(-innerSize / 2 + 3, -innerSize / 2 + 3, innerSize - 6, innerSize * 0.35, r - 2);
-    g.fill({ color: 0xffffff, alpha: 0.35 });
+    // Bottom shadow for all shapes
+    g.ellipse(0, half - 4, half * 0.6, 3);
+    g.fill({ color: 0x000000, alpha: 0.12 });
 
-    // Bottom shadow
-    g.roundRect(-innerSize / 2 + 2, innerSize / 2 - innerSize * 0.2, innerSize - 4, innerSize * 0.15, r - 2);
-    g.fill({ color: 0x000000, alpha: 0.15 });
-
-    // Inner circle gem shape
-    const gemR = innerSize * 0.28;
-    g.circle(0, 0, gemR);
-    g.fill({ color: 0xffffff, alpha: 0.15 });
-    g.circle(-gemR * 0.3, -gemR * 0.3, gemR * 0.3);
-    g.fill({ color: 0xffffff, alpha: 0.25 });
+    // Center shine
+    g.circle(-half * 0.2, -half * 0.2, half * 0.15);
+    g.fill({ color: 0xffffff, alpha: 0.3 });
 
     container.addChild(g);
 
