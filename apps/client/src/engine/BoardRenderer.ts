@@ -29,16 +29,16 @@ export class BoardRenderer {
     this.container.addChild(this.tileContainer);
     this.container.addChild(this.effectsContainer);
 
-    // Calculate tile size
-    const maxTileW = Math.floor((canvasWidth - 24) / board.width);
-    const maxTileH = Math.floor((canvasHeight - 24) / board.height);
-    this.tileSize = Math.min(maxTileW, maxTileH, 58);
+    // Calculate tile size — fill as much width as possible
+    const maxTileW = Math.floor((canvasWidth - 12) / board.width);
+    const maxTileH = Math.floor((canvasHeight - 12) / board.height);
+    this.tileSize = Math.min(maxTileW, maxTileH, 56);
 
-    // Center the board
+    // Position board — center horizontally, push toward bottom
     const boardPixelW = board.width * this.tileSize;
     const boardPixelH = board.height * this.tileSize;
     this.offsetX = Math.floor((canvasWidth - boardPixelW) / 2);
-    this.offsetY = Math.floor((canvasHeight - boardPixelH) / 2);
+    this.offsetY = Math.max(4, Math.floor((canvasHeight - boardPixelH) * 0.35));
 
     this.container.position.set(this.offsetX, this.offsetY);
     this.tilePool = new TilePool(this.tileSize);
@@ -56,14 +56,23 @@ export class BoardRenderer {
     const boardW = this.board.width * size;
     const boardH = this.board.height * size;
 
-    // Gold frame behind the board
+    // Thick gold frame behind the board (Royal Match style)
     const frame = new Graphics();
-    frame.roundRect(-6, -6, boardW + 12, boardH + 12, 12);
-    frame.fill({ color: 0xc8960a }); // dark gold
-    frame.roundRect(-4, -4, boardW + 8, boardH + 8, 10);
-    frame.fill({ color: 0xe8b810 }); // bright gold
-    frame.roundRect(-2, -2, boardW + 4, boardH + 4, 8);
-    frame.fill({ color: 0xf0d040 }); // light gold highlight
+    // Outer shadow
+    frame.roundRect(-10, -10, boardW + 20, boardH + 20, 16);
+    frame.fill({ color: 0x8a6808, alpha: 0.6 });
+    // Dark gold border
+    frame.roundRect(-8, -8, boardW + 16, boardH + 16, 14);
+    frame.fill({ color: 0xb08010 });
+    // Bright gold
+    frame.roundRect(-5, -5, boardW + 10, boardH + 10, 11);
+    frame.fill({ color: 0xd8a818 });
+    // Inner gold highlight
+    frame.roundRect(-3, -3, boardW + 6, boardH + 6, 9);
+    frame.fill({ color: 0xf0c830 });
+    // Inner edge
+    frame.roundRect(-1, -1, boardW + 2, boardH + 2, 7);
+    frame.fill({ color: 0xe0b820 });
     this.bgContainer.addChild(frame);
 
     // Cell backgrounds

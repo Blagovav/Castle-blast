@@ -101,7 +101,7 @@ export class TilePool {
 
   private drawTile(container: Container, type: TileType, special: SpecialType): void {
     const size = this.tileSize;
-    const innerSize = size - 2;
+    const innerSize = size - 1; // Nearly fill the whole cell
 
     container.removeChildren();
 
@@ -111,27 +111,29 @@ export class TilePool {
     const color = TILE_COLORS[type];
     const shape = TILE_SHAPES[type];
     const half = innerSize / 2;
-    const r = 10;
 
-    // Draw shape based on tile type
+    // All tiles: fill cell with bold, saturated shape
     if (shape === 'diamond') {
-      // Diamond/rhombus shape
-      g.moveTo(0, -half + 2);
-      g.lineTo(half - 2, 0);
-      g.lineTo(0, half - 2);
-      g.lineTo(-half + 2, 0);
+      // Fat diamond filling the cell
+      g.moveTo(0, -half * 0.92);
+      g.lineTo(half * 0.92, 0);
+      g.lineTo(0, half * 0.92);
+      g.lineTo(-half * 0.92, 0);
       g.closePath();
       g.fill({ color });
-      // Highlight
-      g.moveTo(0, -half + 5);
-      g.lineTo(half * 0.5, -half * 0.15);
-      g.lineTo(0, -half * 0.05);
-      g.lineTo(-half * 0.5, -half * 0.15);
+      // 3D top facet
+      g.moveTo(0, -half * 0.92);
+      g.lineTo(half * 0.45, -half * 0.1);
+      g.lineTo(0, half * 0.05);
+      g.lineTo(-half * 0.45, -half * 0.1);
       g.closePath();
-      g.fill({ color: 0xffffff, alpha: 0.35 });
+      g.fill({ color: 0xffffff, alpha: 0.25 });
+      // Top sparkle
+      g.circle(-half * 0.15, -half * 0.35, half * 0.1);
+      g.fill({ color: 0xffffff, alpha: 0.5 });
     } else if (shape === 'hexagon') {
-      // Hexagon shape
-      const hr = half - 3;
+      // Fat hexagon filling cell
+      const hr = half * 0.9;
       for (let i = 0; i < 6; i++) {
         const angle = (Math.PI / 3) * i - Math.PI / 6;
         const px = Math.cos(angle) * hr;
@@ -141,25 +143,33 @@ export class TilePool {
       }
       g.closePath();
       g.fill({ color });
-      // Highlight
-      g.roundRect(-half * 0.5, -half + 5, half, half * 0.5, 4);
-      g.fill({ color: 0xffffff, alpha: 0.3 });
+      // Top highlight band
+      const hhr = hr * 0.7;
+      g.moveTo(-hhr * 0.8, -hr * 0.7);
+      g.lineTo(hhr * 0.8, -hr * 0.7);
+      g.lineTo(hhr * 0.5, -hr * 0.2);
+      g.lineTo(-hhr * 0.5, -hr * 0.2);
+      g.closePath();
+      g.fill({ color: 0xffffff, alpha: 0.25 });
+      // Sparkle
+      g.circle(-half * 0.2, -half * 0.3, half * 0.08);
+      g.fill({ color: 0xffffff, alpha: 0.55 });
     } else {
-      // Rounded/circle shape
-      g.roundRect(-half, -half, innerSize, innerSize, r);
+      // Fat rounded rect filling cell
+      const r = half * 0.35;
+      g.roundRect(-half * 0.92, -half * 0.92, innerSize * 0.92, innerSize * 0.92, r);
       g.fill({ color });
-      // Glossy highlight
-      g.roundRect(-half + 3, -half + 3, innerSize - 6, innerSize * 0.35, r - 2);
-      g.fill({ color: 0xffffff, alpha: 0.35 });
+      // Glossy top band
+      g.roundRect(-half * 0.82, -half * 0.82, innerSize * 0.82, innerSize * 0.32, r * 0.8);
+      g.fill({ color: 0xffffff, alpha: 0.3 });
+      // Sparkle
+      g.circle(-half * 0.35, -half * 0.4, half * 0.1);
+      g.fill({ color: 0xffffff, alpha: 0.5 });
     }
 
-    // Bottom shadow for all shapes
-    g.ellipse(0, half - 4, half * 0.6, 3);
-    g.fill({ color: 0x000000, alpha: 0.12 });
-
-    // Center shine
-    g.circle(-half * 0.2, -half * 0.2, half * 0.15);
-    g.fill({ color: 0xffffff, alpha: 0.3 });
+    // Shadow at bottom
+    g.ellipse(0, half * 0.75, half * 0.5, half * 0.08);
+    g.fill({ color: 0x000000, alpha: 0.1 });
 
     container.addChild(g);
 

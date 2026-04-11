@@ -149,7 +149,7 @@ onUnmounted(() => {
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #87CEEB 0%, #6bb3d9 60%, #8a9aaa 100%);
+  background: linear-gradient(180deg, #7ec8e8 0%, #5aaccc 40%, #8a8a7a 70%, #6a6a5a 100%);
 }
 
 /* HUD — Royal Match style */
@@ -187,11 +187,12 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   background: linear-gradient(180deg, #7a2040, #5a1830);
-  padding: 4px 16px 6px;
-  border-radius: 0 0 14px 14px;
+  padding: 6px 20px 8px;
+  border-radius: 0 0 16px 16px;
   border: 2px solid #a03050;
   border-top: none;
-  min-width: 90px;
+  min-width: 100px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
 .play__obj-label {
@@ -227,10 +228,11 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   background: linear-gradient(180deg, #7a2040, #5a1830);
-  padding: 4px 14px 6px;
-  border-radius: 0 0 14px 14px;
+  padding: 6px 18px 8px;
+  border-radius: 0 0 16px 16px;
   border: 2px solid #a03050;
   border-top: none;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
 .play__moves-label {
@@ -243,11 +245,12 @@ onUnmounted(() => {
 }
 
 .play__moves-value {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 900;
   font-family: var(--font-family, "Unbounded"), sans-serif;
-  text-shadow: var(--shadow-text, 1px 2px 0 #000);
+  text-shadow: 2px 3px 0 #000;
   line-height: 1;
+  color: #fff;
 }
 
 /* Canvas */
@@ -288,25 +291,26 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: linear-gradient(180deg, transparent, rgba(0,0,0,0.2));
+  gap: 8px;
+  padding: 6px 16px;
+  background: linear-gradient(180deg, rgba(100,80,50,0.4), rgba(60,40,20,0.6));
   flex-shrink: 0;
-  padding-bottom: max(8px, var(--tma-bottom-ui-safe-bottom, 0px));
+  padding-bottom: max(10px, var(--tma-bottom-ui-safe-bottom, 0px));
+  border-top: 2px solid rgba(200,150,10,0.3);
 }
 
 .play__booster {
   position: relative;
-  width: 52px;
-  height: 52px;
-  border: 2px solid #c8960a;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #f0d860, #c8960a);
+  width: 56px;
+  height: 56px;
+  border: 3px solid #c8960a;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f5e070, #d0a010);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 3px 0 #8a6a08;
+  box-shadow: 0 4px 0 #8a6a08, inset 0 1px 0 rgba(255,255,255,0.3);
 }
 
 .play__booster:disabled {
