@@ -8,6 +8,7 @@ import { SpecialTileLogic } from './SpecialTileLogic.js';
 import { RngBias } from './RngBias.js';
 import { LevelObjectiveTracker } from './LevelObjective.js';
 import { InputHandler } from './InputHandler.js';
+import { getBiomeForLevel } from './Biomes.js';
 import type { GridPos, EngineEvents, TileType } from './types.js';
 
 type EventName = keyof EngineEvents;
@@ -48,9 +49,10 @@ export class GameEngine {
   }
 
   async init(): Promise<void> {
+    const biomePreview = getBiomeForLevel(this.levelDef.level);
     this.app = new Application();
     await this.app.init({
-      background: 0x1a1a2e,
+      background: biomePreview.bgColor,
       resizeTo: this.container,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
@@ -59,19 +61,25 @@ export class GameEngine {
 
     this.container.appendChild(this.app.canvas as HTMLCanvasElement);
 
-    // Create board
+    // Create board with blockers
+    const blockers = (this.levelDef as any).blockers ?? [];
     this.board = new Board(
       this.levelDef.gridWidth,
       this.levelDef.gridHeight,
       this.levelDef.blocked,
       this.levelDef.tileTypes,
+      blockers,
     );
 
-    // Create renderer
+    // Get biome for this level
+    const biome = getBiomeForLevel(this.levelDef.level);
+
+    // Create renderer with biome theme
     this.renderer = new BoardRenderer(
       this.board,
       this.app.screen.width,
       this.app.screen.height,
+      biome,
     );
     this.app.stage.addChild(this.renderer.container);
 
@@ -171,6 +179,9 @@ export class GameEngine {
       this.score += points;
       this.objectiveTracker.addScore(points);
       this.emit('scoreChanged', this.score);
+
+      // Damage blockers adjacent to matched tiles
+      this.damageAdjacentBlockers(allPositions);
 
       // Track collected tile types for objectives
       for (const pos of allPositions) {
@@ -291,6 +302,39 @@ export class GameEngine {
       });
     } else if (this.movesLeft <= 0) {
       this.emit('levelFailed');
+    }
+  }
+
+  /** Damage blockers adjacent to matched positions */
+  private damageAdjacentBlockers(matchedPositions: GridPos[]): void {
+    const damaged = new Set<string>();
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+    for (const pos of matchedPositions) {
+      for (const [dr, dc] of dirs) {
+        const r = pos.row + dr;
+        const c = pos.col + dc;
+        const key = `${r},${c}`;
+        if (damaged.has(key)) continue;
+
+        const tile = this.board.getTile(r, c);
+        if (tile && tile.blocker !== 'none' && tile.blockerHp > 0) {
+          tile.blockerHp--;
+          damaged.add(key);
+
+          if (tile.blockerHp <= 0) {
+            tile.blocker = 'none';
+            this.emit('blockerBroken', { row: r, col: c }, tile.blocker);
+            this.score += 50;
+            this.objectiveTracker.addScore(50);
+            this.emit('scoreChanged', this.score);
+
+            // Show popup for blocker break
+            const pix = this.renderer.gridToPixel(r, c);
+            this.showScorePopup('BREAK!', pix.x, pix.y, true);
+          }
+        }
+      }
     }
   }
 

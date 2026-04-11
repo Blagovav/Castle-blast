@@ -124,7 +124,8 @@ function playLevel(num: number) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #0f1028 0%, #1a1a3e 50%, #12122a 100%);
+  background: var(--color-bg-darkest, #13121D);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 /* Top Bar */
@@ -133,7 +134,7 @@ function playLevel(num: number) {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-dark, #1B1A26);
 }
 
 .home__user {
@@ -146,13 +147,13 @@ function playLevel(num: number) {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  background: var(--gradient-gold, linear-gradient(135deg, #FFD700, #FFA500));
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 16px;
-  color: #1a1a2e;
+  color: var(--color-bg-darkest, #13121D);
   border: 2px solid rgba(255, 215, 0, 0.5);
 }
 
@@ -233,7 +234,7 @@ function playLevel(num: number) {
 
 .home__energy-timer {
   font-size: 11px;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
   margin-left: auto;
 }
 
@@ -250,7 +251,8 @@ function playLevel(num: number) {
 .home__title {
   font-size: 26px;
   font-weight: 900;
-  background: linear-gradient(135deg, #ffd700, #ff6b35);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+  background: var(--gradient-gold, linear-gradient(135deg, #FFD700, #FFA500));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: none;
@@ -280,7 +282,8 @@ function playLevel(num: number) {
   justify-content: center;
   gap: 1px;
   transition: transform 0.1s;
-  background: linear-gradient(145deg, #3a6fd8, #2855a8);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+  background: linear-gradient(145deg, var(--accent-blue, #0060DF), #2855a8);
   box-shadow: 0 3px 0 #1c3a70, inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
@@ -290,13 +293,14 @@ function playLevel(num: number) {
 }
 
 .level-btn--locked {
-  background: linear-gradient(145deg, #2a2a3e, #222235);
+  background: linear-gradient(145deg, var(--color-bg-card, #2B2A34), #222235);
   box-shadow: 0 3px 0 #151525;
   cursor: not-allowed;
 }
 
 .level-btn--current {
-  background: linear-gradient(145deg, #ff8c00, #e06800);
+  background: var(--gradient-gold, linear-gradient(135deg, #FFD700, #FFA500));
+  color: var(--color-bg-darkest, #13121D);
   box-shadow: 0 3px 0 #a04500, inset 0 1px 0 rgba(255,255,255,0.2);
   animation: pulse 2s infinite;
 }
@@ -338,9 +342,10 @@ function playLevel(num: number) {
 /* Bottom Nav */
 .home__nav {
   display: flex;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--color-bg-dark, #1B1A26);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   padding: 2px 0;
+  padding-bottom: var(--tma-bottom-ui-safe-bottom, 0px);
 }
 
 .nav-item {
@@ -354,11 +359,12 @@ function playLevel(num: number) {
   text-decoration: none;
   font-size: 10px;
   font-weight: 600;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
   transition: color 0.2s;
 }
 
 .nav-item--active {
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
 }
 
 .nav-item__img {

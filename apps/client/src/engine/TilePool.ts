@@ -1,5 +1,5 @@
 import { Sprite, Texture, Graphics, Container, Assets } from 'pixi.js';
-import type { TileType, SpecialType } from './types.js';
+import type { TileType, SpecialType, BlockerType } from './types.js';
 
 const TILE_SPRITE_PATHS: Record<number, string> = {
   0: '/sprites/tile_0.png',
@@ -62,10 +62,13 @@ export class TilePool {
   }
 
   /** Get a tile visual */
-  acquire(type: TileType, special: SpecialType = 'none'): Container {
+  acquire(type: TileType, special: SpecialType = 'none', blocker: BlockerType = 'none', blockerHp: number = 0): Container {
     const container = new Container();
     this.active.add(container);
     this.drawTile(container, type, special);
+    if (blocker !== 'none') {
+      this.drawBlockerOverlay(container, blocker, blockerHp);
+    }
     container.visible = true;
     return container;
   }
@@ -148,6 +151,67 @@ export class TilePool {
         container.addChild(sg);
       }
     }
+  }
+
+  /** Draw blocker overlay on top of a tile */
+  private drawBlockerOverlay(container: Container, blocker: BlockerType, hp: number): void {
+    const size = this.tileSize;
+    const innerSize = size - 2;
+    const g = new Graphics();
+
+    if (blocker === 'stone' || blocker === 'stone2') {
+      // Stone overlay — semi-transparent grey with cracks
+      g.roundRect(-innerSize / 2, -innerSize / 2, innerSize, innerSize, 10);
+      g.fill({ color: 0x5a5a6e, alpha: hp > 1 ? 0.7 : 0.45 });
+
+      // Crack lines
+      g.moveTo(-innerSize * 0.15, -innerSize * 0.4);
+      g.lineTo(innerSize * 0.05, 0);
+      g.lineTo(-innerSize * 0.1, innerSize * 0.35);
+      g.stroke({ color: 0x333346, width: hp > 1 ? 2 : 1.5 });
+
+      if (hp > 1) {
+        // Extra cracks for 2HP
+        g.moveTo(innerSize * 0.2, -innerSize * 0.3);
+        g.lineTo(innerSize * 0.1, innerSize * 0.2);
+        g.stroke({ color: 0x333346, width: 1.5 });
+      }
+
+      // Top highlight
+      g.roundRect(-innerSize / 2 + 3, -innerSize / 2 + 3, innerSize - 6, innerSize * 0.2, 6);
+      g.fill({ color: 0x8a8a9e, alpha: 0.3 });
+    } else if (blocker === 'ice') {
+      // Ice overlay — blue-white semi-transparent
+      g.roundRect(-innerSize / 2, -innerSize / 2, innerSize, innerSize, 10);
+      g.fill({ color: 0x88ccff, alpha: 0.4 });
+
+      // Ice crystal lines
+      g.moveTo(-innerSize * 0.2, -innerSize * 0.3);
+      g.lineTo(0, 0);
+      g.lineTo(innerSize * 0.15, -innerSize * 0.25);
+      g.stroke({ color: 0xaaddff, width: 1.5 });
+
+      g.moveTo(0, 0);
+      g.lineTo(innerSize * 0.1, innerSize * 0.3);
+      g.stroke({ color: 0xaaddff, width: 1 });
+
+      // Shine
+      g.circle(-innerSize * 0.2, -innerSize * 0.2, 4);
+      g.fill({ color: 0xffffff, alpha: 0.5 });
+    } else if (blocker === 'chain') {
+      // Chain overlay — X pattern
+      const off = innerSize * 0.35;
+      g.moveTo(-off, -off); g.lineTo(off, off);
+      g.moveTo(off, -off); g.lineTo(-off, off);
+      g.stroke({ color: 0x888888, width: 3 });
+
+      g.circle(-off, -off, 3); g.fill({ color: 0x999999 });
+      g.circle(off, -off, 3); g.fill({ color: 0x999999 });
+      g.circle(-off, off, 3); g.fill({ color: 0x999999 });
+      g.circle(off, off, 3); g.fill({ color: 0x999999 });
+    }
+
+    container.addChild(g);
   }
 
   get tilePixelSize(): number {

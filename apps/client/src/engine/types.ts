@@ -1,5 +1,8 @@
 export type CellState = 'active' | 'blocked';
 
+/** Blocker types that sit ON TOP of or INSTEAD of tiles */
+export type BlockerType = 'none' | 'stone' | 'stone2' | 'ice' | 'chain';
+
 export type TileType = 0 | 1 | 2 | 3 | 4;
 
 export type SpecialType = 'none' | 'rocket_h' | 'rocket_v' | 'bomb';
@@ -7,6 +10,8 @@ export type SpecialType = 'none' | 'rocket_h' | 'rocket_v' | 'bomb';
 export interface Tile {
   type: TileType;
   special: SpecialType;
+  blocker: BlockerType;  // blocker covering this tile
+  blockerHp: number;     // hits remaining (stone2 = 2hp, stone = 1hp, ice = 1hp)
 }
 
 export interface GridPos {
@@ -32,6 +37,19 @@ export interface CascadeStep {
   specialsActivated: { pos: GridPos; special: SpecialType; affected: GridPos[] }[];
 }
 
+/** Biome theme for visual styling */
+export type BiomeType = 'castle' | 'forest' | 'desert' | 'ice' | 'volcano';
+
+export interface BiomeConfig {
+  type: BiomeType;
+  name: string;
+  bgColor: number;
+  cellColor1: number;
+  cellColor2: number;
+  blockedColor: number;
+  blockedHighlight: number;
+}
+
 export interface EngineEvents {
   moveUsed: (movesLeft: number) => void;
   scoreChanged: (score: number) => void;
@@ -41,4 +59,5 @@ export interface EngineEvents {
   cascadeStep: (step: CascadeStep) => void;
   tileSwapped: (a: GridPos, b: GridPos) => void;
   swapRejected: (a: GridPos, b: GridPos) => void;
+  blockerBroken: (pos: GridPos, type: BlockerType) => void;
 }

@@ -15,5 +15,15 @@
   ],
   "objectives": [{ "type": "score", "target": 3500 }],
   "starThresholds": [3500, 7000, 14000],
-  "rngBiasThreshold": 4
+  "rngBiasThreshold": 4,
+  "blockers": [
+    { "col": 2, "row": 2, "type": "stone", "hp": 1 },
+    { "col": 6, "row": 2, "type": "stone", "hp": 1 },
+    { "col": 2, "row": 6, "type": "stone", "hp": 1 },
+    { "col": 6, "row": 6, "type": "stone", "hp": 1 },
+    { "col": 4, "row": 2, "type": "stone2", "hp": 2 },
+    { "col": 4, "row": 6, "type": "stone2", "hp": 2 },
+    { "col": 3, "row": 4, "type": "ice", "hp": 1 },
+    { "col": 5, "row": 4, "type": "ice", "hp": 1 }
+  ]
 }

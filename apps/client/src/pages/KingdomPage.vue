@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEconomyStore } from '@/stores/economy';
-import { BaseModal, PrimaryCtaButton, ProgressBar } from '@umbrella-software-corp/ui-kit';
+import { ScreenLayout, BaseModal, PrimaryCtaButton, ProgressBar, CollectButton, UpgradeButton } from '@umbrella-software-corp/ui-kit';
 
 const router = useRouter();
 const economyStore = useEconomyStore();
-const tg = window.Telegram?.WebApp;
 
 interface BuildingDisplay {
   type: string;
@@ -41,16 +40,6 @@ function goBack() {
   router.push({ name: 'home' });
 }
 
-onMounted(() => {
-  tg?.BackButton.show();
-  tg?.BackButton.onClick(goBack);
-});
-
-onUnmounted(() => {
-  tg?.BackButton.hide();
-  tg?.BackButton.offClick(goBack);
-});
-
 function collectIncome() {
   if (pendingIncome.value <= 0) return;
   economyStore.coins += pendingIncome.value;
@@ -74,18 +63,15 @@ function upgradeBuilding() {
 </script>
 
 <template>
-  <div class="kingdom">
-    <header class="kingdom__header">
-      <button class="kingdom__back" @click="goBack">←</button>
-      <h2>Kingdom</h2>
-      <div class="kingdom__coins">
-        <img src="/sprites/icon_coin.png" class="kingdom__coin-img" alt="" />
-        {{ economyStore.coins.toLocaleString() }}
-      </div>
-    </header>
+  <ScreenLayout title="Kingdom" @back="goBack">
+    <!-- Coins display -->
+    <div class="kingdom__coins-bar">
+      <img src="/sprites/icon_coin.png" class="kingdom__coin-img" alt="" />
+      <span class="kingdom__coins-value">{{ economyStore.coins.toLocaleString() }}</span>
+    </div>
 
     <!-- Idle Income Collection -->
-    <div class="kingdom__collect" v-if="pendingIncome > 0" @click="collectIncome">
+    <div class="kingdom__collect" v-if="pendingIncome > 0">
       <div class="kingdom__collect-glow"></div>
       <div class="kingdom__collect-content">
         <div class="kingdom__collect-left">
@@ -98,7 +84,7 @@ function upgradeBuilding() {
             </div>
           </div>
         </div>
-        <button class="kingdom__collect-btn">Collect</button>
+        <CollectButton @click="collectIncome">Collect</CollectButton>
       </div>
     </div>
 
@@ -130,18 +116,16 @@ function upgradeBuilding() {
           </div>
           <div v-else class="building__unlock">Unlock at Level {{ b.unlockLevel }}</div>
           <div v-if="b.level > 0" class="building__progress">
-            <div class="building__progress-bar">
-              <div class="building__progress-fill" :style="{ width: (b.level / b.maxLevel * 100) + '%', background: b.color }"></div>
-            </div>
+            <ProgressBar :value="b.level" :max="b.maxLevel" />
             <span class="building__progress-text">{{ b.level }}/{{ b.maxLevel }}</span>
           </div>
         </div>
         <button
           class="building__upgrade-btn"
           :disabled="economyStore.coins < b.upgradeCost"
-          :style="{ background: economyStore.coins >= b.upgradeCost ? `linear-gradient(135deg, ${b.color}, ${b.color}dd)` : '' }"
+          @click.stop="openUpgrade(b)"
         >
-          {{ b.level === 0 ? 'Build' : 'Upgrade' }}
+          <div class="building__upgrade-label">{{ b.level === 0 ? 'Build' : 'Upgrade' }}</div>
           <div class="building__upgrade-cost">
             <img src="/sprites/icon_coin.png" class="building__cost-icon" alt="" />
             {{ b.upgradeCost.toLocaleString() }}
@@ -187,50 +171,31 @@ function upgradeBuilding() {
         </div>
       </div>
     </BaseModal>
-  </div>
+  </ScreenLayout>
 </template>
 
 <style scoped>
-.kingdom {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(180deg, #0f1028 0%, #1a2040 50%, #12122a 100%);
-}
-
-.kingdom__header {
+.kingdom__coins-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.kingdom__back {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.kingdom__header h2 { flex: 1; font-size: 20px; }
-
-.kingdom__coins {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 700;
-  font-size: 15px;
-  color: #ffd700;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 16px;
 }
 
 .kingdom__coin-img { width: 18px; height: 18px; }
 
+.kingdom__coins-value {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-gold, #FFD700);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+}
+
 /* Collect Banner */
 .kingdom__collect {
   position: relative;
-  margin: 12px;
+  margin: 0 0 12px;
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
@@ -268,21 +233,11 @@ function upgradeBuilding() {
   gap: 4px;
   font-size: 20px;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .kingdom__mini-coin { width: 16px; height: 16px; }
-
-.kingdom__collect-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #1a1a2e;
-  font-weight: 800;
-  font-size: 14px;
-  cursor: pointer;
-}
 
 .kingdom__rate {
   display: flex;
@@ -298,12 +253,9 @@ function upgradeBuilding() {
 
 /* Buildings */
 .kingdom__buildings {
-  flex: 1;
-  padding: 0 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow-y: auto;
 }
 
 .building {
@@ -312,7 +264,7 @@ function upgradeBuilding() {
   gap: 10px;
   padding: 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-bg-card, #2B2A34);
   border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transition: background 0.2s;
@@ -359,7 +311,7 @@ function upgradeBuilding() {
   min-width: 0;
 }
 
-.building__name { font-weight: 700; font-size: 14px; }
+.building__name { font-weight: 700; font-size: 14px; font-family: var(--font-family, "Unbounded"), sans-serif; }
 .building__desc { font-size: 11px; opacity: 0.5; margin: 1px 0; }
 
 .building__income {
@@ -367,7 +319,7 @@ function upgradeBuilding() {
   align-items: center;
   gap: 3px;
   font-size: 12px;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
   font-weight: 600;
 }
 
@@ -376,36 +328,34 @@ function upgradeBuilding() {
 
 .building__progress { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 
-.building__progress-bar {
-  flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.building__progress-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s;
-}
-
 .building__progress-text { font-size: 10px; opacity: 0.4; }
 
 .building__upgrade-btn {
   padding: 8px 12px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #4a4a6a, #3a3a5a);
-  color: #fff;
+  background: var(--gradient-gold, linear-gradient(135deg, #FFD700, #FFA500));
+  color: var(--color-bg-darkest, #13121D);
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
   text-align: center;
   min-width: 70px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
-.building__upgrade-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.building__upgrade-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: var(--color-bg-card, #2B2A34);
+  color: #fff;
+}
+
+.building__upgrade-label {
+  font-family: var(--font-family, "Unbounded"), sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+}
 
 .building__upgrade-cost {
   display: flex;
@@ -420,7 +370,7 @@ function upgradeBuilding() {
 .building__cost-icon { width: 10px; height: 10px; }
 
 /* Upgrade Modal */
-.upgrade-modal { text-align: center; }
+.upgrade-modal { text-align: center; font-family: var(--font-family, "Unbounded"), sans-serif; }
 .upgrade-modal__sprite { width: 80px; height: 80px; object-fit: contain; margin-bottom: 12px; }
 .upgrade-modal h3 { font-size: 20px; margin-bottom: 4px; }
 .upgrade-modal p { font-size: 13px; opacity: 0.6; margin-bottom: 16px; }
@@ -442,7 +392,7 @@ function upgradeBuilding() {
 }
 
 .upgrade-modal__stat span { opacity: 0.6; }
-.upgrade-modal__stat strong { color: #2ecc71; }
+.upgrade-modal__stat strong { color: var(--accent-green, #C5FF00); }
 
 .upgrade-modal__cost {
   display: flex;
@@ -451,7 +401,7 @@ function upgradeBuilding() {
   gap: 6px;
   font-size: 22px;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
   margin-bottom: 16px;
 }
 
@@ -464,9 +414,10 @@ function upgradeBuilding() {
   padding: 12px;
   border: none;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-card, #2B2A34);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 </style>

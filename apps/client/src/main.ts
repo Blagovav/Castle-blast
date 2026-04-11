@@ -6,12 +6,14 @@ import { useAuthStore } from './stores/auth';
 import { usePlayerStore } from './stores/player';
 import { useEconomyStore } from './stores/economy';
 import '@umbrella-software-corp/ui-kit/style.css';
+import { vPress } from '@umbrella-software-corp/ui-kit';
 
 const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
 app.use(router);
+app.directive('press', vPress);
 
 app.mount('#app');
 

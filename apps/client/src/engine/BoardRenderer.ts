@@ -1,7 +1,8 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { Board } from './Board.js';
 import { TilePool } from './TilePool.js';
-import type { GridPos, TileType, SpecialType } from './types.js';
+import type { GridPos, TileType, SpecialType, BiomeConfig } from './types.js';
+import { BIOMES } from './Biomes.js';
 
 export class BoardRenderer {
   readonly container: Container;
@@ -11,12 +12,14 @@ export class BoardRenderer {
   private tilePool: TilePool;
   private tileSprites: Map<string, Container> = new Map();
   private board: Board;
+  private biome: BiomeConfig;
   private tileSize: number;
   private offsetX: number;
   private offsetY: number;
 
-  constructor(board: Board, canvasWidth: number, canvasHeight: number) {
+  constructor(board: Board, canvasWidth: number, canvasHeight: number, biome: BiomeConfig = BIOMES.castle) {
     this.board = board;
+    this.biome = biome;
     this.container = new Container();
     this.bgContainer = new Container();
     this.tileContainer = new Container();
@@ -61,12 +64,12 @@ export class BoardRenderer {
         const y = row * size;
 
         if (this.board.isActive(row, col)) {
-          // Active cell — checkerboard subtle background
+          // Active cell — checkerboard with biome colors
           const isLight = (row + col) % 2 === 0;
           bg.roundRect(x + 1, y + 1, size - 2, size - 2, 8);
-          bg.fill({ color: isLight ? 0x343460 : 0x2e2e55, alpha: 0.7 });
+          bg.fill({ color: isLight ? this.biome.cellColor1 : this.biome.cellColor2, alpha: 0.7 });
         } else if (this.board.cells[row][col] === 'blocked') {
-          // Blocked cell — stone/wall block (VISIBLE)
+          // Blocked cell — stone/wall block (VISIBLE) with biome color
           this.drawBlockedCell(bg, x, y, size);
         }
       }
@@ -77,27 +80,30 @@ export class BoardRenderer {
 
   /** Draw a stone block for blocked cells */
   private drawBlockedCell(g: Graphics, x: number, y: number, size: number): void {
+    const bc = this.biome.blockedColor;
+    const bh = this.biome.blockedHighlight;
+
     // Stone base
-    g.roundRect(x + 1, y + 1, size - 2, size - 2, 4);
-    g.fill({ color: 0x4a4a5e });
+    g.roundRect(x + 1, y + 1, size - 2, size - 2, 6);
+    g.fill({ color: bc });
 
-    // Stone texture lines
-    g.roundRect(x + 3, y + 3, size - 6, size - 6, 3);
-    g.fill({ color: 0x3d3d52 });
+    // Inner stone
+    g.roundRect(x + 3, y + 3, size - 6, size - 6, 4);
+    g.fill({ color: bc - 0x0a0a0a });
 
-    // Crack lines for detail
-    g.moveTo(x + size * 0.3, y + 3);
+    // Crack lines
+    g.moveTo(x + size * 0.3, y + 4);
     g.lineTo(x + size * 0.4, y + size * 0.5);
-    g.lineTo(x + size * 0.25, y + size - 3);
-    g.stroke({ color: 0x333346, width: 1 });
+    g.lineTo(x + size * 0.25, y + size - 4);
+    g.stroke({ color: bc - 0x151515, width: 1 });
 
     g.moveTo(x + size * 0.7, y + size * 0.2);
     g.lineTo(x + size * 0.6, y + size * 0.7);
-    g.stroke({ color: 0x333346, width: 1 });
+    g.stroke({ color: bc - 0x151515, width: 1 });
 
     // Top highlight
-    g.roundRect(x + 3, y + 3, size - 6, size * 0.25, 3);
-    g.fill({ color: 0x5a5a6e, alpha: 0.4 });
+    g.roundRect(x + 3, y + 3, size - 6, size * 0.25, 4);
+    g.fill({ color: bh, alpha: 0.35 });
   }
 
   /** Render all tiles from current board state */
@@ -112,15 +118,15 @@ export class BoardRenderer {
       for (let col = 0; col < this.board.width; col++) {
         const tile = this.board.getTile(row, col);
         if (tile) {
-          this.addTileSprite(row, col, tile.type, tile.special);
+          this.addTileSprite(row, col, tile.type, tile.special, tile.blocker, tile.blockerHp);
         }
       }
     }
   }
 
   /** Add a tile sprite at grid position */
-  addTileSprite(row: number, col: number, type: TileType, special: SpecialType = 'none'): Container {
-    const sprite = this.tilePool.acquire(type, special);
+  addTileSprite(row: number, col: number, type: TileType, special: SpecialType = 'none', blocker: any = 'none', blockerHp: number = 0): Container {
+    const sprite = this.tilePool.acquire(type, special, blocker, blockerHp);
     const { x, y } = this.gridToPixel(row, col);
     sprite.position.set(x, y);
     this.tileContainer.addChild(sprite);

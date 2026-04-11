@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTelegram } from '@/composables/useTelegram';
-import { ScreenLayout, BaseTabs, LeaderboardRow, PodiumPlace } from '@umbrella-software-corp/ui-kit';
+import { ScreenLayout, BaseTabs } from '@umbrella-software-corp/ui-kit';
 
 const router = useRouter();
 const { user } = useTelegram();
-const tg = window.Telegram?.WebApp;
 const activeTab = ref('weekly');
 
 const tabs = [
@@ -67,16 +66,6 @@ function goBack() {
   router.push({ name: 'home' });
 }
 
-onMounted(() => {
-  tg?.BackButton.show();
-  tg?.BackButton.onClick(goBack);
-});
-
-onUnmounted(() => {
-  tg?.BackButton.hide();
-  tg?.BackButton.offClick(goBack);
-});
-
 function getMedalEmoji(rank: number): string {
   if (rank === 1) return '🥇';
   if (rank === 2) return '🥈';
@@ -86,12 +75,7 @@ function getMedalEmoji(rank: number): string {
 </script>
 
 <template>
-  <div class="lb">
-    <header class="lb__header">
-      <button class="lb__back" @click="goBack">←</button>
-      <h2>Leaderboard</h2>
-    </header>
-
+  <ScreenLayout title="Leaderboard" @back="goBack">
     <!-- Tabs using UI Kit -->
     <div class="lb__tabs-wrap">
       <BaseTabs :tabs="tabs" v-model="activeTab" />
@@ -125,37 +109,10 @@ function getMedalEmoji(rank: number): string {
         <div class="lb__score">{{ entry.score.toLocaleString() }}</div>
       </div>
     </div>
-  </div>
+  </ScreenLayout>
 </template>
 
 <style scoped>
-.lb {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #1a1a2e;
-}
-
-.lb__header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #16213e;
-}
-
-.lb__back {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.lb__header h2 {
-  font-size: 20px;
-}
-
 .lb__tabs-wrap {
   padding: 12px 16px 0;
 }
@@ -164,9 +121,9 @@ function getMedalEmoji(rank: number): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 12px 16px;
+  margin: 12px 0;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #2d3a6a, #1e2a4a);
+  background: var(--color-bg-card, #2B2A34);
   border: 1px solid rgba(74, 144, 217, 0.3);
   border-radius: 12px;
 }
@@ -178,13 +135,12 @@ function getMedalEmoji(rank: number): string {
 
 .lb__my-rank strong {
   font-size: 22px;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .lb__list {
-  flex: 1;
-  padding: 0 12px 16px;
-  overflow-y: auto;
+  padding: 0 0 16px;
 }
 
 .lb__entry {
@@ -202,7 +158,7 @@ function getMedalEmoji(rank: number): string {
 }
 
 .lb__entry--top3 {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-bg-card, #2B2A34);
 }
 
 .lb__rank {

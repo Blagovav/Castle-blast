@@ -1,5 +1,12 @@
 import { GRID_WIDTH, GRID_HEIGHT, TILE_TYPES, MIN_MATCH } from '@castle-blast/shared';
-import type { CellState, Tile, TileType, GridPos, SpecialType } from './types.js';
+import type { CellState, Tile, TileType, GridPos, SpecialType, BlockerType } from './types.js';
+
+export interface BoardBlocker {
+  col: number;
+  row: number;
+  type: BlockerType;
+  hp: number;
+}
 
 export class Board {
   readonly width: number;
@@ -13,6 +20,7 @@ export class Board {
     height: number = GRID_HEIGHT,
     blocked: [number, number][] = [],
     tileTypes: number = TILE_TYPES,
+    blockers: BoardBlocker[] = [],
   ) {
     this.width = width;
     this.height = height;
@@ -37,6 +45,15 @@ export class Board {
 
     // Fill with random tiles ensuring no initial matches
     this.fillInitial();
+
+    // Apply blockers to tiles
+    for (const b of blockers) {
+      const tile = this.tiles[b.row]?.[b.col];
+      if (tile) {
+        tile.blocker = b.type;
+        tile.blockerHp = b.hp;
+      }
+    }
   }
 
   isActive(row: number, col: number): boolean {
@@ -59,7 +76,7 @@ export class Board {
   }
 
   createTile(type?: TileType, special: SpecialType = 'none'): Tile {
-    return { type: type ?? this.randomTileType(), special };
+    return { type: type ?? this.randomTileType(), special, blocker: 'none', blockerHp: 0 };
   }
 
   /** Fill the board initially without creating any matches */

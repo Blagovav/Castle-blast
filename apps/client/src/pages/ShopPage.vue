@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEconomyStore } from '@/stores/economy';
 import { usePlayerStore } from '@/stores/player';
-import { BaseModal, PrimaryCtaButton } from '@umbrella-software-corp/ui-kit';
+import { ScreenLayout, BaseModal, PrimaryCtaButton, PurchaseButton } from '@umbrella-software-corp/ui-kit';
 import {
   COST_LIVES_REFILL,
   COST_EXTRA_MOVES,
@@ -31,17 +31,6 @@ function goBack() {
   router.push({ name: 'home' });
 }
 
-// Telegram Back Button
-const tg = window.Telegram?.WebApp;
-onMounted(() => {
-  tg?.BackButton.show();
-  tg?.BackButton.onClick(goBack);
-});
-onUnmounted(() => {
-  tg?.BackButton.hide();
-  tg?.BackButton.offClick(goBack);
-});
-
 function selectItem(item: typeof shopItems[number]) {
   selectedItem.value = item;
   showConfirm.value = true;
@@ -60,15 +49,14 @@ async function confirmPurchase() {
 </script>
 
 <template>
-  <div class="shop">
-    <header class="shop__header">
-      <button class="shop__back" @click="goBack">←</button>
-      <h2>Shop</h2>
+  <ScreenLayout title="Shop" @back="goBack">
+    <div class="shop__balance-bar">
+      <span class="shop__balance-label">Balance</span>
       <div class="shop__balance">⭐ {{ economyStore.stars }}</div>
-    </header>
+    </div>
 
     <div class="shop__grid">
-      <button
+      <div
         v-for="item in shopItems"
         :key="item.id"
         class="shop__card"
@@ -81,8 +69,10 @@ async function confirmPurchase() {
           <span class="shop__card-name">{{ item.name }}</span>
           <span class="shop__card-desc">{{ item.desc }}</span>
         </div>
-        <div class="shop__card-price">{{ item.price }} ⭐</div>
-      </button>
+        <PurchaseButton @click.stop="selectItem(item)">
+          {{ item.price }} ⭐
+        </PurchaseButton>
+      </div>
     </div>
 
     <!-- Purchase Confirm Modal (using UI Kit BaseModal) -->
@@ -100,51 +90,36 @@ async function confirmPurchase() {
         </div>
       </div>
     </BaseModal>
-  </div>
+  </ScreenLayout>
 </template>
 
 <style scoped>
-.shop {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #1a1a2e;
-}
-
-.shop__header {
+.shop__balance-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #16213e;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 4px;
 }
 
-.shop__back {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.shop__header h2 {
-  flex: 1;
-  font-size: 20px;
+.shop__balance-label {
+  font-size: 13px;
+  opacity: 0.5;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .shop__balance {
   font-weight: 700;
   font-size: 16px;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .shop__grid {
-  flex: 1;
-  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow-y: auto;
+  padding: 0 4px;
 }
 
 .shop__card {
@@ -152,12 +127,10 @@ async function confirmPurchase() {
   align-items: center;
   gap: 12px;
   padding: 14px;
-  border: none;
   border-radius: 14px;
-  background: #22264a;
+  background: var(--color-bg-card, #2B2A34);
   color: #fff;
   cursor: pointer;
-  text-align: left;
   transition: transform 0.1s;
 }
 
@@ -186,6 +159,7 @@ async function confirmPurchase() {
 .shop__card-name {
   font-weight: 700;
   font-size: 15px;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .shop__card-desc {
@@ -193,15 +167,9 @@ async function confirmPurchase() {
   opacity: 0.6;
 }
 
-.shop__card-price {
-  font-weight: 700;
-  font-size: 16px;
-  color: #ffd700;
-  white-space: nowrap;
-}
-
 .shop__modal-content {
   text-align: center;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 
 .shop__modal-icon {
@@ -215,12 +183,12 @@ async function confirmPurchase() {
   margin: 0 auto 16px;
 }
 
-.shop__modal h3 {
+.shop__modal-content h3 {
   font-size: 20px;
   margin-bottom: 4px;
 }
 
-.shop__modal p {
+.shop__modal-content p {
   font-size: 14px;
   opacity: 0.6;
   margin-bottom: 16px;
@@ -229,7 +197,7 @@ async function confirmPurchase() {
 .shop__modal-price {
   font-size: 24px;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--color-gold, #FFD700);
   margin-bottom: 20px;
 }
 
@@ -238,8 +206,7 @@ async function confirmPurchase() {
   gap: 12px;
 }
 
-.shop__btn-cancel,
-.shop__btn-buy {
+.shop__btn-cancel {
   flex: 1;
   padding: 12px;
   border: none;
@@ -247,15 +214,8 @@ async function confirmPurchase() {
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-}
-
-.shop__btn-cancel {
-  background: #333;
+  background: var(--color-bg-card, #2B2A34);
   color: #fff;
-}
-
-.shop__btn-buy {
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #1a1a2e;
+  font-family: var(--font-family, "Unbounded"), sans-serif;
 }
 </style>
