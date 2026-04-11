@@ -97,21 +97,23 @@ export class Board {
     }
   }
 
-  /** Check if placing a tile type at (row, col) would create a match */
-  private wouldMatch(row: number, col: number, type: TileType): boolean {
-    // Check horizontal (look left)
-    let hCount = 1;
-    for (let c = col - 1; c >= 0 && this.isActive(row, c) && this.tiles[row][c]?.type === type; c--) {
-      hCount++;
-    }
-    if (hCount >= MIN_MATCH) return true;
+  /** Check if placing a tile type at (row, col) would create a match.
+   *  Checks all 4 directions (left, right, up, down).
+   */
+  wouldMatch(row: number, col: number, type: TileType): boolean {
+    // Horizontal: count left + right
+    let left = 0;
+    for (let c = col - 1; c >= 0 && this.isActive(row, c) && this.tiles[row][c]?.type === type; c--) left++;
+    let right = 0;
+    for (let c = col + 1; c < this.width && this.isActive(row, c) && this.tiles[row][c]?.type === type; c++) right++;
+    if (left + right + 1 >= MIN_MATCH) return true;
 
-    // Check vertical (look up)
-    let vCount = 1;
-    for (let r = row - 1; r >= 0 && this.isActive(r, col) && this.tiles[r][col]?.type === type; r--) {
-      vCount++;
-    }
-    if (vCount >= MIN_MATCH) return true;
+    // Vertical: count up + down
+    let up = 0;
+    for (let r = row - 1; r >= 0 && this.isActive(r, col) && this.tiles[r][col]?.type === type; r--) up++;
+    let down = 0;
+    for (let r = row + 1; r < this.height && this.isActive(r, col) && this.tiles[r][col]?.type === type; r++) down++;
+    if (up + down + 1 >= MIN_MATCH) return true;
 
     return false;
   }
@@ -183,7 +185,16 @@ export class Board {
     for (let col = 0; col < this.width; col++) {
       for (let row = 0; row < this.height; row++) {
         if (this.isActive(row, col) && this.tiles[row][col] === null) {
-          const tile = this.createTile(biasedType);
+          let tile: Tile;
+          let attempts = 0;
+
+          // Try biased type first, but fall back to random if it would match
+          do {
+            const useType = (attempts === 0 && biasedType !== undefined) ? biasedType : undefined;
+            tile = this.createTile(useType);
+            attempts++;
+          } while (this.wouldMatch(row, col, tile.type) && attempts < 20);
+
           this.tiles[row][col] = tile;
           spawned.push({ pos: { row, col }, tile });
         }

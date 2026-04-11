@@ -9,6 +9,11 @@ export const router = createRouter({
       component: () => import('@/pages/HomePage.vue'),
     },
     {
+      path: '/levels',
+      name: 'levels',
+      component: () => import('@/pages/LevelSelectPage.vue'),
+    },
+    {
       path: '/play/:levelNum',
       name: 'play',
       component: () => import('@/pages/PlayPage.vue'),
