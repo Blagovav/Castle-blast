@@ -28,6 +28,9 @@ onMounted(async () => {
   try {
     const levelDef = await gameStore.loadLevel(props.levelNum);
 
+    // Wait for flex layout to settle so canvas has correct dimensions
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
     engine = new GameEngine({
       container: canvasRef.value,
       levelDef,
@@ -79,6 +82,13 @@ onUnmounted(() => {
         <span class="play__moves-value">{{ gameStore.movesLeft }}</span>
       </div>
     </header>
+
+    <!-- Castle scene above board -->
+    <div class="play__scene">
+      <div class="play__tower play__tower--left"></div>
+      <div class="play__wall"></div>
+      <div class="play__tower play__tower--right"></div>
+    </div>
 
     <!-- Game Canvas -->
     <div ref="canvasRef" class="play__canvas">
@@ -253,11 +263,65 @@ onUnmounted(() => {
   color: #fff;
 }
 
-/* Canvas */
+/* Castle scene decoration */
+.play__scene {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 40px;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 0 20px;
+}
+
+.play__tower {
+  width: 28px;
+  height: 36px;
+  background: linear-gradient(180deg, #8a7a60, #6a5a40);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+}
+
+.play__tower::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-bottom: 10px solid #7a6a50;
+}
+
+.play__wall {
+  flex: 1;
+  height: 24px;
+  background: linear-gradient(180deg, #7a6a50, #5a4a30);
+  position: relative;
+}
+
+.play__wall::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(
+    90deg,
+    #8a7a60 0px, #8a7a60 14px,
+    #6a5a40 14px, #6a5a40 16px
+  );
+}
+
+/* Canvas — takes remaining space between HUD and boosters */
 .play__canvas {
   flex: 1;
   position: relative;
   overflow: hidden;
+  min-height: 0; /* Critical: allows flex shrink */
 }
 
 .play__loading {
