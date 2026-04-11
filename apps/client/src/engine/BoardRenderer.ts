@@ -32,13 +32,14 @@ export class BoardRenderer {
     // Calculate tile size — fill as much width as possible
     const maxTileW = Math.floor((canvasWidth - 12) / board.width);
     const maxTileH = Math.floor((canvasHeight - 12) / board.height);
-    this.tileSize = Math.min(maxTileW, maxTileH, 56);
+    this.tileSize = Math.min(maxTileW, maxTileH, 60);
 
     // Position board — center horizontally, push toward bottom
     const boardPixelW = board.width * this.tileSize;
     const boardPixelH = board.height * this.tileSize;
     this.offsetX = Math.floor((canvasWidth - boardPixelW) / 2);
-    this.offsetY = Math.max(4, Math.floor((canvasHeight - boardPixelH) * 0.35));
+    // Board starts near top of canvas — no empty space
+    this.offsetY = 4;
 
     this.container.position.set(this.offsetX, this.offsetY);
     this.tilePool = new TilePool(this.tileSize);
@@ -74,6 +75,42 @@ export class BoardRenderer {
     frame.roundRect(-1, -1, boardW + 2, boardH + 2, 7);
     frame.fill({ color: 0xe0b820 });
     this.bgContainer.addChild(frame);
+
+    // Castle brick wall BELOW board (fills remaining canvas)
+    const canvasH = Math.max(boardH + 200, 900);
+    const wallY = boardH + 12;
+    const wall = new Graphics();
+    // Main wall
+    wall.rect(-this.offsetX, wallY, boardW + this.offsetX * 2 + 20, canvasH);
+    wall.fill({ color: 0x6a5a3a });
+    // Brick pattern rows
+    for (let wy = wallY; wy < wallY + canvasH; wy += 18) {
+      const offset = (Math.floor((wy - wallY) / 18) % 2) * 20;
+      for (let wx = -this.offsetX + offset; wx < boardW + this.offsetX + 20; wx += 40) {
+        wall.rect(wx, wy, 38, 16);
+        wall.fill({ color: 0x7a6a4a });
+        wall.rect(wx + 1, wy + 1, 36, 6);
+        wall.fill({ color: 0x887858, alpha: 0.4 });
+      }
+    }
+    // Battlement merlons on top edge
+    for (let mx = -this.offsetX; mx < boardW + this.offsetX; mx += 28) {
+      wall.rect(mx, wallY - 10, 20, 12);
+      wall.fill({ color: 0x7a6a4a });
+      wall.rect(mx + 1, wallY - 9, 18, 4);
+      wall.fill({ color: 0x887858, alpha: 0.4 });
+    }
+    this.bgContainer.addChildAt(wall, 0);
+
+    // Side walls (left and right of board)
+    const sideWall = new Graphics();
+    // Left wall
+    sideWall.rect(-this.offsetX, -10, this.offsetX - 12, boardH + 24);
+    sideWall.fill({ color: 0x6a5a3a });
+    // Right wall
+    sideWall.rect(boardW + 12, -10, this.offsetX, boardH + 24);
+    sideWall.fill({ color: 0x6a5a3a });
+    this.bgContainer.addChildAt(sideWall, 0);
 
     // Cell backgrounds
     const bg = new Graphics();

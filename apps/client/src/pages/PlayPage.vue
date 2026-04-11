@@ -75,13 +75,7 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <!-- Castle wall scene -->
-    <div class="play__castle-wall">
-      <div class="play__battlement"></div>
-      <div class="play__bricks"></div>
-    </div>
-
-    <!-- Game Canvas -->
+    <!-- Game Canvas (board starts immediately) -->
     <div ref="canvasRef" class="play__canvas">
       <div v-if="loading" class="play__loading">
         <div class="play__loading-spinner"></div>
@@ -150,7 +144,7 @@ onUnmounted(() => {
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #7ec8e8 0%, #5aaccc 40%, #8a8a7a 70%, #6a6a5a 100%);
+  background: linear-gradient(180deg, #7ec8e8 0%, #60b0d0 50%, #7a7060 75%, #5a5040 100%);
 }
 
 /* HUD Banner — Royal Match connected panels */
@@ -237,51 +231,6 @@ onUnmounted(() => {
   font-family: var(--font-family, "Unbounded"), sans-serif;
   text-shadow: 2px 3px 0 #000;
   line-height: 1;
-}
-
-/* Castle wall decoration between HUD and board */
-.play__castle-wall {
-  flex-shrink: 0;
-  height: 28px;
-  position: relative;
-  margin: 0 16px;
-}
-
-.play__battlement {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(180deg, #8a7a5a, #6a5a3a);
-  border-radius: 4px 4px 0 0;
-}
-
-.play__battlement::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: repeating-linear-gradient(
-    90deg,
-    #8a7a5a 0px, #8a7a5a 18px,
-    transparent 18px, transparent 24px
-  );
-}
-
-.play__bricks {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 12px;
-  background: repeating-linear-gradient(
-    90deg,
-    #7a6a4a 0px, #7a6a4a 22px,
-    #5a4a2a 22px, #5a4a2a 24px
-  );
 }
 
 /* Canvas — takes remaining space between HUD and boosters */
