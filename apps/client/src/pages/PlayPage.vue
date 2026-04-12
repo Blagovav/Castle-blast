@@ -27,8 +27,6 @@ onMounted(async () => {
 
   try {
     const levelDef = await gameStore.loadLevel(props.levelNum);
-
-    // Wait for flex layout to settle so canvas has correct dimensions
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     engine = new GameEngine({
@@ -58,24 +56,37 @@ onUnmounted(() => {
 
 <template>
   <div class="play">
-    <!-- HUD Banner — connected panels like Royal Match -->
+    <!-- Background image -->
+    <div class="play__bg"></div>
+
+    <!-- HUD -->
     <header class="play__hud">
+      <!-- King Avatar -->
       <div class="play__avatar">
-        <img src="/sprites/king_avatar.png" class="play__avatar-img" alt="" onerror="this.textContent='👑'" />
+        <img src="/sprites/king_avatar_v2.png" class="play__avatar-img" alt="" />
       </div>
-      <div class="play__hud-banner">
-        <div class="play__goals-panel">
+
+      <!-- Goals Panel -->
+      <div class="play__panel play__panel--goals">
+        <div class="play__panel-inner">
           <span class="play__panel-label">Goals</span>
-          <div class="play__panel-value">⭐ {{ gameStore.score }}</div>
+          <div class="play__panel-content">
+            <img src="/sprites/ui_star_filled.png" class="play__panel-icon" alt="" onerror="this.style.display='none'" />
+            <span class="play__panel-value">{{ gameStore.score }}</span>
+          </div>
         </div>
-        <div class="play__moves-panel">
+      </div>
+
+      <!-- Moves Panel -->
+      <div class="play__panel play__panel--moves">
+        <div class="play__panel-inner">
           <span class="play__panel-label">Moves</span>
-          <div class="play__moves-num">{{ gameStore.movesLeft }}</div>
+          <span class="play__moves-num">{{ gameStore.movesLeft }}</span>
         </div>
       </div>
     </header>
 
-    <!-- Game Canvas (board starts immediately) -->
+    <!-- Game Canvas -->
     <div ref="canvasRef" class="play__canvas">
       <div v-if="loading" class="play__loading">
         <div class="play__loading-spinner"></div>
@@ -86,24 +97,22 @@ onUnmounted(() => {
     <!-- Boosters Bar -->
     <div class="play__boosters">
       <button class="play__booster" disabled>
-        <img src="/sprites/booster_rocket.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='🚀'" />
-        <span class="play__booster-lock">🔒</span>
+        <img src="/sprites/booster_hammer_v2.png" class="play__booster-img" alt="" />
+        <span class="play__booster-badge">🔒</span>
       </button>
       <button class="play__booster" disabled>
-        <img src="/sprites/booster_bomb.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='💣'" />
-        <span class="play__booster-lock">🔒</span>
+        <img src="/sprites/booster_cannon_v2.png" class="play__booster-img" alt="" />
+        <span class="play__booster-badge">🔒</span>
       </button>
       <button class="play__booster" disabled>
-        <img src="/sprites/booster_shuffle.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='🔀'" />
-        <span class="play__booster-lock">🔒</span>
+        <img src="/sprites/booster_jester_v2.png" class="play__booster-img" alt="" />
+        <span class="play__booster-badge">🔒</span>
       </button>
       <button class="play__booster" disabled>
-        <img src="/sprites/booster_color_bomb.png" class="play__booster-img" alt="" onerror="this.parentElement.innerHTML='🌈'" />
-        <span class="play__booster-lock">🔒</span>
+        <img src="/sprites/booster_arrow_v2.png" class="play__booster-img" alt="" />
+        <span class="play__booster-badge">🔒</span>
       </button>
-      <button class="play__booster-settings">
-        <span>⚙️</span>
-      </button>
+      <button class="play__settings">⚙️</button>
     </div>
 
     <!-- Win Overlay -->
@@ -114,9 +123,6 @@ onUnmounted(() => {
       :coins-reward="Math.floor((gameStore.result?.score ?? 0) * 0.1)"
       victory-label="Level Complete!"
       score-label="Your score"
-      continue-label="Continue"
-      home-label="Home"
-      next-level-label="Next Level"
       @continue="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })"
       @home="goBack"
       @next-level="router.push({ name: 'play', params: { levelNum: levelNum + 1 } })"
@@ -139,36 +145,42 @@ onUnmounted(() => {
 
 <style scoped>
 .play {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #7ec8e8 0%, #60b0d0 50%, #7a7060 75%, #5a5040 100%);
 }
 
-/* HUD Banner — Royal Match connected panels */
+/* Full-screen background image */
+.play__bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('/sprites/bg_biome_castle.png');
+  background-size: cover;
+  background-position: center top;
+  z-index: 0;
+}
+
+/* HUD */
 .play__hud {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: flex-start;
-  padding: 4px 8px 0;
-  flex-shrink: 0;
+  padding: 6px 8px 0;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .play__avatar {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   border-radius: 14px;
   overflow: hidden;
-  border: 3px solid #d4a010;
-  background: linear-gradient(135deg, #6a3a18, #4a2810);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 
 .play__avatar-img {
@@ -177,68 +189,69 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-.play__hud-banner {
+/* HUD Panels */
+.play__panel {
   flex: 1;
-  display: flex;
-  gap: 0;
+  min-width: 0;
 }
 
-.play__goals-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: linear-gradient(180deg, #8a2848, #6a1830);
-  padding: 5px 12px 7px;
-  border-radius: 0 0 0 14px;
-  border: 2px solid #a83858;
+.play__panel-inner {
+  background: linear-gradient(180deg, #7a2040, #551530);
+  border-radius: 0 0 16px 16px;
+  border: 2.5px solid #a83858;
   border-top: none;
-  border-right: 1px solid #a83858;
-}
-
-.play__moves-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: linear-gradient(180deg, #8a2848, #6a1830);
-  padding: 5px 16px 7px;
-  border-radius: 0 0 14px 0;
-  border: 2px solid #a83858;
-  border-top: none;
-  border-left: 1px solid #6a1830;
-  min-width: 70px;
+  padding: 5px 12px 8px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.35);
 }
 
 .play__panel-label {
-  font-size: 8px;
+  display: block;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   color: rgba(255,255,255,0.65);
   font-family: var(--font-family, "Unbounded"), sans-serif;
+  margin-bottom: 2px;
+}
+
+.play__panel-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.play__panel-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .play__panel-value {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 800;
   font-family: var(--font-family, "Unbounded"), sans-serif;
-  text-shadow: 1px 1px 0 #000;
+  text-shadow: 1px 2px 0 #000;
 }
 
 .play__moves-num {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 900;
   font-family: var(--font-family, "Unbounded"), sans-serif;
   text-shadow: 2px 3px 0 #000;
   line-height: 1;
+  color: #fff;
 }
 
-/* Canvas — takes remaining space between HUD and boosters */
+/* Canvas */
 .play__canvas {
-  flex: 1;
   position: relative;
+  z-index: 5;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  min-height: 0; /* Critical: allows flex shrink */
 }
 
 .play__loading {
@@ -251,76 +264,79 @@ onUnmounted(() => {
   gap: 12px;
   font-family: var(--font-family, "Unbounded"), sans-serif;
   font-size: 14px;
-  color: rgba(0,0,0,0.5);
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .play__loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(0,0,0,0.1);
-  border-top-color: #c8960a;
+  width: 36px;
+  height: 36px;
+  border: 4px solid rgba(255,255,255,0.2);
+  border-top-color: #ffd700;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Boosters Bar */
 .play__boosters {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 6px 16px;
-  background: linear-gradient(180deg, rgba(100,80,50,0.4), rgba(60,40,20,0.6));
+  padding: 8px 16px;
+  background: linear-gradient(180deg, rgba(60,40,20,0.85), rgba(40,25,10,0.95));
+  border-top: 2px solid rgba(200,150,10,0.4);
   flex-shrink: 0;
   padding-bottom: max(10px, var(--tma-bottom-ui-safe-bottom, 0px));
-  border-top: 2px solid rgba(200,150,10,0.3);
 }
 
 .play__booster {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border: 3px solid #c8960a;
   border-radius: 14px;
-  background: linear-gradient(180deg, #f5e070, #d0a010);
+  background: linear-gradient(180deg, #f5e070, #c8960a);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 0 #8a6a08, inset 0 1px 0 rgba(255,255,255,0.3);
+  box-shadow: 0 4px 0 #7a5808, inset 0 2px 0 rgba(255,255,255,0.25);
+  padding: 6px;
 }
 
-.play__booster:disabled {
-  opacity: 0.7;
-}
+.play__booster:disabled { opacity: 0.75; }
 
 .play__booster-img {
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
-.play__booster-lock {
+.play__booster-badge {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  font-size: 12px;
+  bottom: -4px;
+  right: -4px;
+  font-size: 14px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 8px;
+  padding: 1px 3px;
 }
 
-.play__booster-settings {
-  width: 40px;
-  height: 40px;
+.play__settings {
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 50%;
-  background: rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.15);
   cursor: pointer;
+  font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
 }
 </style>

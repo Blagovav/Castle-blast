@@ -52,7 +52,7 @@ export class GameEngine {
     const biomePreview = getBiomeForLevel(this.levelDef.level);
     this.app = new Application();
     await this.app.init({
-      background: biomePreview.bgColor,
+      backgroundAlpha: 0, // Transparent — CSS background image shows through
       resizeTo: this.container,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
