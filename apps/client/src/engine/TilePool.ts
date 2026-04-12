@@ -76,10 +76,11 @@ export class TilePool {
     const tex = this.textures.get(`tile_${type}`);
 
     if (tex) {
-      // Use actual 3D sprite image!
+      // Use actual 3D sprite — render BIGGER so the object fills the cell
+      // Sprites have whitespace padding, so we scale up to compensate
       const sprite = new Sprite(tex);
-      sprite.width = size;
-      sprite.height = size;
+      sprite.width = size * 1.45;
+      sprite.height = size * 1.45;
       sprite.anchor.set(0.5);
       container.addChild(sprite);
     } else {
