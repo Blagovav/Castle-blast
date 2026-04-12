@@ -121,8 +121,14 @@ export class BoardRenderer {
 
         if (this.board.isActive(row, col)) {
           const isLight = (row + col) % 2 === 0;
-          bg.roundRect(x + 0.5, y + 0.5, size - 1, size - 1, 4);
+          // Seamless cells — no gap, subtle checkerboard
+          bg.rect(x, y, size, size);
           bg.fill({ color: isLight ? this.biome.cellColor1 : this.biome.cellColor2 });
+          // Thin grid line
+          bg.rect(x, y + size - 0.5, size, 0.5);
+          bg.fill({ color: 0x000000, alpha: 0.06 });
+          bg.rect(x + size - 0.5, y, 0.5, size);
+          bg.fill({ color: 0x000000, alpha: 0.06 });
         } else if (this.board.cells[row][col] === 'blocked') {
           this.drawBlockedCell(bg, x, y, size);
         }

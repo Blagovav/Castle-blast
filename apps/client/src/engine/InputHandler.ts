@@ -38,6 +38,12 @@ export class InputHandler {
     const pos = e.global;
     this.startPos = { x: pos.x, y: pos.y };
     this.startGrid = this.renderer.pixelToGrid(pos.x, pos.y);
+
+    // JUICE: Scale up selected tile
+    if (this.startGrid) {
+      const sprite = this.renderer.getTileSprite(this.startGrid.row, this.startGrid.col);
+      if (sprite) sprite.scale.set(1.12);
+    }
   }
 
   private onPointerUp(e: any): void {
@@ -77,6 +83,11 @@ export class InputHandler {
   }
 
   private reset(): void {
+    // JUICE: Reset selected tile scale
+    if (this.startGrid) {
+      const sprite = this.renderer.getTileSprite(this.startGrid.row, this.startGrid.col);
+      if (sprite) sprite.scale.set(1);
+    }
     this.startPos = null;
     this.startGrid = null;
   }

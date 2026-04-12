@@ -255,13 +255,24 @@ export class GameEngine {
         this.board.setTile(pos.row, pos.col, { type, special: special as any });
       }
 
-      // Show score popup at center of matched area
+      // Show score popup + combo text at center of matched area
       if (allPositions.length > 0) {
         const avgRow = allPositions.reduce((s, p) => s + p.row, 0) / allPositions.length;
         const avgCol = allPositions.reduce((s, p) => s + p.col, 0) / allPositions.length;
         const pixPos = this.renderer.gridToPixel(Math.round(avgRow), Math.round(avgCol));
         const label = cascadeCount > 1 ? `+${points} x${cascadeCount}!` : `+${points}`;
         this.showScorePopup(label, pixPos.x, pixPos.y, cascadeCount > 1);
+
+        // JUICE: Combo text for cascades
+        if (cascadeCount === 2) this.showComboText('Great!', pixPos.x, pixPos.y - 30);
+        else if (cascadeCount === 3) this.showComboText('Amazing!', pixPos.x, pixPos.y - 30);
+        else if (cascadeCount === 4) this.showComboText('Wonderful!', pixPos.x, pixPos.y - 30);
+        else if (cascadeCount >= 5) this.showComboText('INCREDIBLE!', pixPos.x, pixPos.y - 30);
+
+        // JUICE: Screen shake on big matches
+        if (allPositions.length >= 5 || cascadeCount >= 3) {
+          this.screenShake(allPositions.length >= 7 ? 6 : 3);
+        }
       }
 
       // === JUICE: Animate tile destruction (shrink + spin) ===
@@ -509,6 +520,68 @@ export class GameEngine {
       };
       requestAnimationFrame(tick);
     });
+  }
+
+  /** JUICE: Big combo text (Great! Amazing! etc) */
+  private showComboText(text: string, x: number, y: number): void {
+    const style = new TextStyle({
+      fontFamily: '"Unbounded", Arial',
+      fontSize: 28,
+      fontWeight: 'bold',
+      fill: '#FFD700',
+      stroke: { color: '#8a4500', width: 4 },
+      dropShadow: { color: '#000000', blur: 3, distance: 2 },
+    });
+    const label = new Text({ text, style });
+    label.anchor.set(0.5);
+    label.position.set(x, y);
+    label.scale.set(0.3);
+    this.renderer.effectsContainer.addChild(label);
+
+    const startTime = performance.now();
+    const tick = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / 1000, 1);
+
+      // Pop in (0-0.2), hold (0.2-0.7), fade out (0.7-1)
+      if (t < 0.15) {
+        const e = t / 0.15;
+        label.scale.set(0.3 + 0.9 * (1 - (1 - e) * (1 - e)));
+      } else if (t < 0.7) {
+        label.scale.set(1.2);
+        label.y = y - (t - 0.15) * 15;
+      } else {
+        const fade = (t - 0.7) / 0.3;
+        label.alpha = 1 - fade;
+        label.y = y - 8 - fade * 20;
+        label.scale.set(1.2 + fade * 0.3);
+      }
+
+      if (t < 1) requestAnimationFrame(tick);
+      else { label.removeFromParent(); label.destroy(); }
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /** JUICE: Screen shake effect */
+  private screenShake(intensity: number): void {
+    const container = this.renderer.container;
+    const origX = container.x;
+    const origY = container.y;
+    const startTime = performance.now();
+    const duration = 300;
+
+    const tick = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const decay = 1 - t;
+      container.x = origX + (Math.random() - 0.5) * intensity * 2 * decay;
+      container.y = origY + (Math.random() - 0.5) * intensity * 2 * decay;
+
+      if (t < 1) requestAnimationFrame(tick);
+      else { container.x = origX; container.y = origY; }
+    };
+    requestAnimationFrame(tick);
   }
 
   /** JUICE: Quick horizontal shake for invalid swap */
